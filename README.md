@@ -1,16 +1,19 @@
 # mtr
 
-Rust metrics for common functions.
-
-`mtr` = metrics
-
-Measurements in CPU cycles.
+Metrics for common Rust functions.
 
 - [mtr](#mtr)
+  - [About](#about)
   - [Usage](#usage)
   - [array vs vector](#array-vs-vector)
   - [match vs array](#match-vs-array)
   - [Development notes](#development-notes)
+
+## About
+
+`mtr` = metrics
+
+Measurements in CPU cycles.
 
 ## Usage
 
