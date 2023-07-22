@@ -1,0 +1,18 @@
+[package]
+name = "mtr"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+prettyplease = "0.2.10"
+proc-macro2 = "1.0.63"
+quote = "1.0.29"
+syn = "2.0.23"
+rand = "0.8.5"
+
+[dependencies]
+ben = { git = "https://github.com/rana/ben.git", version = "0.1.0" }
+clap = { version = "4.3.19", features = ["derive"] }
+comfy-table = "7.0.1"
+num-format = "0.4.4"
+rand = "0.8.5"
