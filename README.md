@@ -65,29 +65,6 @@ Options:
 
 ## Development notes
 
-Cargo profiles for compiler optimization.
-
-<https://doc.rust-lang.org/cargo/reference/profiles.html#opt-level>
-<https://doc.rust-lang.org/cargo/reference/profiles.html#dev>
-
-`test` & `dev` profiles don't optimize code, `opt-level=0`.
-
-To emit assembly code from Rust:
-* `cargo rustc -- --emit asm`
-* Read assembly file `target/debug/deps/mtr-44866ab166973511.s`.
-
-To make assembly code more readable:
-* Mark crate type as `#![crate_type = "staticlib"]`.
-* Marks fn with attribute `#[no_mangle]`.
-```rust
-#![crate_type = "staticlib"]
-#[no_mangle]
-pub fn something(){}
-```
-```sh
-cargo rustc --crate-type=staticlib
-```
-
 [Why my Rust benchmarks were wrong, or how to correctly use std::hint::black_box?](https://gendignoux.com/blog/2022/01/31/rust-benchmarks.html)
 
 [Counting exactly the number of distinct elements: sorted arrays vs. hash sets?](https://lemire.me/blog/2017/05/23/counting-exactly-the-number-of-distinct-elements-sorted-arrays-vs-hash-sets/)
@@ -95,3 +72,7 @@ cargo rustc --crate-type=staticlib
 [Counting CPU cycles](https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/master/2017/05/23/benchmark.h#L5) Daniel Lemire, C code: `RDTSC_START`, `RDTSC_STOP`
 
 [RDTSC — Read Time-Stamp Counter](https://www.felixcloutier.com/x86/rdtsc)
+
+To emit assembly code from Rust:
+* `cargo rustc -- --emit asm`
+* Read assembly file `target/debug/deps/mtr-44866ab166973511.s`.
