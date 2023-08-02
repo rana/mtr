@@ -347,7 +347,7 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
     stm
 }
 
-pub static ALC_RNG: Range<u32> = 2..5; //4..18;
+pub static ALC_RNG: Range<u32> = 4..18;
 
 /// Emits a token stream for the `alc_arr` statements.
 pub fn emit_bens_alc_arr() -> TokenStream {

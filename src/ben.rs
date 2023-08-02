@@ -10,6 +10,7 @@
 
 use clap::{arg, Parser};
 use comfy_table::{presets::UTF8_FULL, Table};
+use itertools::Itertools;
 use std::{
     arch::x86_64,
     cell::RefCell,
@@ -18,6 +19,7 @@ use std::{
     hash::Hash,
     hint::black_box,
     mem,
+    ops::Div,
     rc::Rc,
     str::FromStr,
 };
@@ -120,7 +122,13 @@ impl Cli {
                                 let trn_lbl = L::from_str(trn_str)?;
                                 let sers = grps.ser(trn_lbl)?;
                                 self.dbg.then(|| println!("{:?}", sers));
-                                println!("{}", sers);
+                                if !self.cmp {
+                                    println!("{}", sers);
+                                } else {
+                                    let cmps = sers.cmp()?;
+                                    self.dbg.then(|| println!("{:?}", cmps));
+                                    println!("{}", cmps);
+                                }
                             }
                         }
                     }
@@ -608,6 +616,65 @@ where
 // A list of benchmark result series.
 #[derive(Debug, Clone)]
 pub struct Sers(Vec<Ser>);
+impl Sers {
+    /// Compares pairs of series.
+    pub fn cmp(&self) -> Result<Cmps> {
+        // Check whether there are enough series to compare.
+        // First index is a header row, and isn't comparable.
+        if self.0.len() == 2 {
+            // Notify that one series cannot be compared.
+            return Err("series comparison: only one series".to_string());
+        }
+
+        // Compare all combinations of series.
+        let cmp_len = (1..self.0.len()).combinations(2).count();
+        let mut cmps: Vec<Cmp> = Vec::with_capacity(cmp_len);
+        for idxs in (1..self.0.len()).combinations(2) {
+            cmps.push(self.cmp_pair(idxs[0], idxs[1]));
+        }
+
+        Ok(Cmps(cmps))
+    }
+
+    /// Compares a pair of series as a ratio of max/min.
+    fn cmp_pair(&self, idx_a: usize, idx_b: usize) -> Cmp {
+        let mut sers: Vec<Vec<String>> = Vec::with_capacity(4);
+
+        // Clone series 'a' and series 'b'.
+        let a = self.0[idx_a].clone();
+        let b = self.0[idx_b].clone();
+
+        // Calculate ratio of values at each index.
+        let len = a.vals.len();
+        let mut vals = Vec::with_capacity(1 + len);
+        vals.push("ratio (max / min)".to_string());
+        for n in 0..len {
+            let mut min: f32;
+            let max: f32;
+            if a.vals[n] < b.vals[n] {
+                min = a.vals[n] as f32;
+                max = b.vals[n] as f32;
+            } else {
+                min = b.vals[n] as f32;
+                max = a.vals[n] as f32;
+            }
+            min = min.max(1.0);
+            let ratio = max.div(min);
+            let mut ratio_str = format!("{:.1}", ratio);
+            if ratio_str.ends_with('0') {
+                ratio_str.drain(ratio_str.len()-2..);
+            }
+            vals.push(ratio_str);
+        }
+
+        sers.push(self.0[0].to_vec_strs());
+        sers.push(a.to_vec_strs());
+        sers.push(b.to_vec_strs());
+        sers.push(vals);
+
+        Cmp(sers)
+    }
+}
 impl fmt::Display for Sers {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut tbl = Table::new();
@@ -640,6 +707,46 @@ impl Ser {
     /// Returns a new series.
     pub fn new(name: String, vals: Vec<u64>) -> Self {
         Ser { name, vals }
+    }
+
+    // Returns the series as a list of strings.
+    pub fn to_vec_strs(&self) -> Vec<String> {
+        let mut ret = Vec::with_capacity(1 + self.vals.len());
+        ret.push(self.name.clone());
+        for val in self.vals.iter() {
+            ret.push(fmt_num(val));
+        }
+        ret
+    }
+}
+
+// A comparison of two series.
+#[derive(Debug, Clone)]
+pub struct Cmp(Vec<Vec<String>>);
+impl fmt::Display for Cmp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut tbl = Table::new();
+        tbl.load_preset(UTF8_FULL);
+        for (n, strs) in self.0.iter().enumerate() {
+            if n == 0 {
+                tbl.set_header(strs);
+            } else {
+                tbl.add_row(strs);
+            }
+        }
+        f.write_fmt(format_args!("{}", tbl))
+    }
+}
+
+// A list of comparisons.
+#[derive(Debug, Clone)]
+pub struct Cmps(Vec<Cmp>);
+impl fmt::Display for Cmps {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for cmp in self.0.iter() {
+            f.write_fmt(format_args!("{}\n", cmp))?;
+        }
+        Ok(())
     }
 }
 
