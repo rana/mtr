@@ -361,10 +361,20 @@ where
             // Find the median value.
             // Overwrite values with the median value.
             if let Some(sel) = sel {
-                if sel.trim() == "mdn" {
+                let sel = sel.trim();
+                if sel == "mdn" {
                     let mdl = vals.len() / 2;
                     let mdn = vals.select_nth_unstable(mdl).1;
                     vals = vec![*mdn];
+                } else if sel == "avg" {
+                    let avg = vals.iter().sum::<u64>().saturating_div(vals.len() as u64);
+                    vals = vec![avg];
+                } else if sel == "min" {
+                    let min = vals.iter().min().unwrap();
+                    vals = vec![*min];
+                } else if sel == "max" {
+                    let max = vals.iter().max().unwrap();
+                    vals = vec![*max];
                 }
             }
             res.push(Dat::new(&op.lbls, vals))
@@ -662,7 +672,7 @@ impl Sers {
             let ratio = max.div(min);
             let mut ratio_str = format!("{:.1}", ratio);
             if ratio_str.ends_with('0') {
-                ratio_str.drain(ratio_str.len()-2..);
+                ratio_str.drain(ratio_str.len() - 2..);
             }
             vals.push(ratio_str);
         }
