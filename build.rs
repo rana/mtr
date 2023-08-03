@@ -562,7 +562,7 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
         stm_inr.extend(quote! {
             #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
                 let arr = [#stm_arr];
-                let mut idxs: Vec<usize> = (0..#lit_len).into_iter().collect();
+                let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
                 idxs.shuffle(&mut rng);
                 let mut ret = [0u32; 1];
@@ -610,7 +610,7 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
             #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
-                let mut idxs: Vec<usize> = (0..#lit_len).into_iter().collect();
+                let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
                 idxs.shuffle(&mut rng);
                 let mut ret = [0u32; 1];
