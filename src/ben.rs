@@ -9,7 +9,7 @@
 #![allow(clippy::borrowed_box)]
 
 use clap::{arg, Parser};
-use comfy_table::{presets::UTF8_FULL, Table};
+use comfy_table::{presets::UTF8_FULL, Cell, Color, Row, Table};
 use itertools::Itertools;
 use std::{
     arch::x86_64,
@@ -216,6 +216,56 @@ where
             let fst = fst_cpu_cyc();
             black_box(f());
             lst_cpu_cyc() - fst
+        }));
+
+        let id = *self.id.borrow();
+
+        // Insert a benchmark function id for each label.
+        let mut ids = self.ids.borrow_mut();
+        for lbl in lbls.clone() {
+            let lbl_ids = ids.entry(*lbl).or_insert(HashSet::new());
+            lbl_ids.insert(id);
+        }
+
+        // Insert the benchmark function.
+        self.ops.borrow_mut().insert(id, Op::new(lbls, fnc));
+
+        // Increment the id for the next insert call.
+        *self.id.borrow_mut() += 1;
+
+        Ok(())
+    }
+
+    /// Insert a benchmark function which is manually timed.
+    ///
+    /// The caller is expected to call `start()` and `stop()` functions
+    /// on the specified `Tme` parameter.
+    pub fn ins_prm<F, O>(&self, lbls: &[L], mut f: F) -> Result<()>
+    where
+        F: FnMut(Rc<RefCell<Tme>>) -> O,
+        F: 'static,
+    {
+        if lbls.is_empty() {
+            return Err("missing label: parameter 'lbls' is empty".to_string());
+        }
+
+        // Capture the benchmark function in a closure.
+        // Enables the benchmark function to return a genericaly typed value
+        // while benchmark returns a single timestamp value.
+        // Returning a value from the benchmark function, in coordination with `black_box()`,
+        // disallows the compiler from optimizing away inner logic.
+        // Returns `FnMut() -> u64` to enable selecting and running benchmark functions.
+        let fnc = Rc::new(RefCell::new(move || {
+            // Avoid compiler over-optimization of benchmark functions by using `black_box(f())`.
+            //  Explanation of how black_box works with LLVM ASM and memory.
+            //      https://github.com/rust-lang/rust/blob/6a944187fb917393c9c6c39825dec3c1de29787c/compiler/rustc_codegen_llvm/src/intrinsic.rs#L339
+            // `black_box` call from rust benchmark.
+            //      https://github.com/rust-lang/rust/blob/cb6ab9516bbbd3859b56dd23e32fe41600e0ae02/library/test/src/lib.rs#L628
+            // Record cpu cycles with assembly instructions.
+            let tme = Rc::new(RefCell::new(Tme(0)));
+            black_box(f(tme.clone()));
+            let x = tme.borrow();
+            x.0
         }));
 
         let id = *self.id.borrow();
@@ -648,41 +698,75 @@ impl Sers {
 
     /// Compares a pair of series as a ratio of max/min.
     fn cmp_pair(&self, idx_a: usize, idx_b: usize) -> Cmp {
-        let mut sers: Vec<Vec<String>> = Vec::with_capacity(4);
+        let mut rows: Vec<Vec<Cell>> = Vec::with_capacity(4);
+
+        // Add header row
+        let mut h_cells: Vec<Cell> = self.0[0].vals.iter().map(Cell::new).collect();
+        h_cells.insert(0, Cell::new(self.0[0].name.clone()));
+        rows.push(h_cells);
 
         // Clone series 'a' and series 'b'.
         let a = self.0[idx_a].clone();
         let b = self.0[idx_b].clone();
 
-        // Calculate ratio of values at each index.
+        // Calculate the ratio of values at each index.
+        // Determine the display formatting at the same time.
+        // Lower times are better.
+        let clr_best = Color::Green;
         let len = a.vals.len();
-        let mut vals = Vec::with_capacity(1 + len);
-        vals.push("ratio (max / min)".to_string());
+        let mut a_cells: Vec<Cell> = Vec::with_capacity(1 + len);
+        let mut b_cells: Vec<Cell> = Vec::with_capacity(1 + len);
+        let mut c_cells: Vec<Cell> = Vec::with_capacity(1 + len);
+        let mut a_best_cnt: u16 = 0;
+        let mut b_best_cnt: u16 = 0;
         for n in 0..len {
             let mut min: f32;
             let max: f32;
             if a.vals[n] < b.vals[n] {
                 min = a.vals[n] as f32;
                 max = b.vals[n] as f32;
+                a_cells.push(Cell::new(fmt_num(a.vals[n])).fg(clr_best));
+                b_cells.push(Cell::new(fmt_num(b.vals[n])));
+                a_best_cnt += 1;
             } else {
                 min = b.vals[n] as f32;
                 max = a.vals[n] as f32;
+                if b.vals[n] < a.vals[n] {
+                    a_cells.push(Cell::new(fmt_num(a.vals[n])));
+                    b_cells.push(Cell::new(fmt_num(b.vals[n])).fg(clr_best));
+                    b_best_cnt += 1;
+                } else {
+                    a_cells.push(Cell::new(fmt_num(a.vals[n])).fg(clr_best));
+                    b_cells.push(Cell::new(fmt_num(b.vals[n])).fg(clr_best));
+                    a_best_cnt += 1;
+                    b_best_cnt += 1;
+                }
             }
             min = min.max(1.0);
             let ratio = max.div(min);
-            let mut ratio_str = format!("{:.1}", ratio);
-            if ratio_str.ends_with('0') {
-                ratio_str.drain(ratio_str.len() - 2..);
-            }
-            vals.push(ratio_str);
+            c_cells.push(Cell::new(fmt_f32(ratio)));
         }
 
-        sers.push(self.0[0].to_vec_strs());
-        sers.push(a.to_vec_strs());
-        sers.push(b.to_vec_strs());
-        sers.push(vals);
+        // Colorized series with the most best counts.
+        // Larger is better.
+        #[allow(clippy::comparison_chain)]
+        if a_best_cnt == b_best_cnt {
+            a_cells.insert(0, Cell::new(a.name).fg(clr_best));
+            b_cells.insert(0, Cell::new(b.name).fg(clr_best));
+        } else if a_best_cnt > b_best_cnt {
+            a_cells.insert(0, Cell::new(a.name).fg(clr_best));
+            b_cells.insert(0, Cell::new(b.name));
+        } else {
+            a_cells.insert(0, Cell::new(a.name));
+            b_cells.insert(0, Cell::new(b.name).fg(clr_best));
+        }
+        c_cells.insert(0, Cell::new("ratio (max / min)"));
 
-        Cmp(sers)
+        rows.push(a_cells);
+        rows.push(b_cells);
+        rows.push(c_cells);
+
+        Cmp(rows)
     }
 }
 impl fmt::Display for Sers {
@@ -732,16 +816,16 @@ impl Ser {
 
 // A comparison of two series.
 #[derive(Debug, Clone)]
-pub struct Cmp(Vec<Vec<String>>);
+pub struct Cmp(Vec<Vec<Cell>>);
 impl fmt::Display for Cmp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut tbl = Table::new();
         tbl.load_preset(UTF8_FULL);
-        for (n, strs) in self.0.iter().enumerate() {
+        for (n, cells) in self.0.iter().enumerate() {
             if n == 0 {
-                tbl.set_header(strs);
+                tbl.set_header(Row::from(cells.clone()));
             } else {
-                tbl.add_row(strs);
+                tbl.add_row(Row::from(cells.clone()));
             }
         }
         f.write_fmt(format_args!("{}", tbl))
@@ -849,6 +933,21 @@ where
 
         // Insert a benchmark function.
         self.set.borrow().ins(&all_lbls.0, f)
+    }
+
+    /// Insert a benchmark function, which is manually timed,
+    /// with the section's labels.
+    pub fn ins_prm<F, O>(&self, lbls: &[L], f: F) -> Result<()>
+    where
+        F: FnMut(Rc<RefCell<Tme>>) -> O,
+        F: 'static,
+    {
+        // Add section labels.
+        let mut all_lbls = self.lbls.clone();
+        all_lbls.0.extend(lbls);
+
+        // Insert a benchmark function.
+        self.set.borrow().ins_prm(&all_lbls.0, f)
     }
 }
 
@@ -971,6 +1070,26 @@ pub trait EnumStructVal {
     fn val(&self) -> Result<u64>;
 }
 
+/// Measures the ellapsed time of processor instructions.
+///
+/// # Examples
+/// ```
+/// t.start();
+/// // your benchmark code
+/// t.stop();
+/// ```
+pub struct Tme(u64);
+impl Tme {
+    /// Starts the processor timer.
+    pub fn start(&mut self) {
+        self.0 = fst_cpu_cyc();
+    }
+    /// Stops the processor timer.
+    pub fn stop(&mut self) {
+        self.0 = lst_cpu_cyc() - self.0;
+    }
+}
+
 /// Returns a starting timestamp from the processor.
 ///
 /// Call before the thing you would like to measure,
@@ -1059,6 +1178,19 @@ where
         idx = idx.saturating_sub(3);
     }
     s
+}
+
+/// Returns a formatted f32 rounded to one decimal place.
+///
+/// '.0' suffix is removed.
+///
+/// Comma separator for values to the left of the floating point.
+pub fn fmt_f32(v: f32) -> String {
+    let mut s = format!("{:.1}", v);
+    if s.ends_with('0') {
+        s.drain(s.len() - 2..);
+    }
+    fmt_num(s)
 }
 
 /// A Result with a String error.

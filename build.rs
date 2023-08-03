@@ -560,15 +560,17 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
         // Read each element from an array in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
                 let arr = [#stm_arr];
                 let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
                 idxs.shuffle(&mut rng);
                 let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
                 for idx in idxs {
                     ret[0] = arr[idx];
                 }
+                tme.borrow_mut().stop();
                 ret[0]
             })?;
         });
@@ -609,17 +611,19 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
         // Read each element from a match in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
                 let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
                 idxs.shuffle(&mut rng);
                 let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
                 for idx in idxs {
                     ret[0] = match idx {
                         #stm_arm
                         _ => panic!("uh oh, no no: beyond the match limit"),
                     }
                 }
+                tme.borrow_mut().stop();
                 ret[0]
             })?;
         });
