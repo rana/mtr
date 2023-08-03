@@ -1,6 +1,7 @@
 use convert_case::{self, Case, Casing};
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
+use rand::Rng;
 use std::fs;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
@@ -83,10 +84,15 @@ pub fn emit_bens_imports() -> TokenStream {
 
     stm.extend(quote! {
         #![allow(clippy::slow_vector_initialization)]
+        #![allow(clippy::needless_range_loop)]
         use core::fmt;
         use core::hash::Hash;
         use core::str;
         use crate::ben::*;
+        use rand::seq::SliceRandom;
+        use rand::thread_rng;
+        // use rand::prelude::*;
+        // use rip_shuffle::RipShuffleParallel;
     });
 
     stm
@@ -102,8 +108,8 @@ pub fn lbl_strs_all() -> Vec<&'static str> {
 /// Returns label strings mapping to a plain enum cases.
 pub fn lbl_strs_plain() -> Vec<&'static str> {
     vec![
-        "alc", "arr", "asc", "cap", "dsc", "lop", "mat", "mcr", "mdn", "raw", "rd", "rsz", "ser",
-        "unr", "vec", "wrt",
+        "alc", "arr", "asc", "cap", "dsc", "lop", "mat", "mcr", "mdn", "raw", "rnd", "rd", "rsz",
+        "ser", "seq", "unr", "vec", "wrt",
     ]
 }
 /// Returns label strings which map to struct u32 cases of an enum.
@@ -330,6 +336,10 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_alc_arr,
         emit_bens_alc_vec_rsz,
         emit_bens_alc_vec_mcr,
+        emit_bens_rd_arr_seq,
+        emit_bens_rd_mat_seq,
+        emit_bens_rd_arr_rnd,
+        emit_bens_rd_mat_rnd,
     ];
     tok_bens
         .iter()
@@ -421,6 +431,197 @@ pub fn emit_bens_alc_vec_mcr() -> TokenStream {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
             #idn_sec.ins(&[Lbl::Len(#lit_len)], || vec![0u32; #lit_len])?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub static RD_RNG: Range<u32> = 4..12;
+
+/// Emits a token stream for the `rd_arr_seq` statements.
+pub fn emit_bens_rd_arr_seq() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Arr, Lbl::Seq]);
+    });
+    let mut rng = rand::thread_rng();
+    for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Create an array with random elements.
+        let mut stm_arr = TokenStream::new();
+        for _ in 0..len {
+            let lit_ret_n = Literal::u32_unsuffixed(rng.gen_range(0..u32::MAX));
+            stm_arr.extend(quote! { #lit_ret_n, });
+        }
+
+        // Read each element from an array in sequence.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+                let arr = [#stm_arr];
+                let mut ret = [0u32; 1];
+                for idx in 0..#lit_len {
+                    ret[0] = arr[idx];
+                }
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+/// Emits a token stream for the `rd_mat_seq` statements.
+pub fn emit_bens_rd_mat_seq() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Mat, Lbl::Seq]);
+    });
+    let mut rng = rand::thread_rng();
+    for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Create match arms which return a random u32.
+        let mut stm_arm = TokenStream::new();
+        for idx in 0..len {
+            let lit_idx = Literal::u32_unsuffixed(idx);
+            let lit_ret_n = Literal::u32_unsuffixed(rng.gen_range(0..u32::MAX));
+            stm_arm.extend(quote! {
+                #lit_idx => #lit_ret_n,
+            });
+        }
+
+        // Read each element from a match in sequence.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+                let mut ret = [0u32; 1];
+                for idx in 0..#lit_len {
+                    ret[0] = match idx {
+                        #stm_arm
+                        _ => panic!("uh oh, no no: beyond the match limit"),
+                    }
+                }
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+/// Emits a token stream for the `rd_arr_rnd` statements.
+pub fn emit_bens_rd_arr_rnd() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Arr, Lbl::Rnd]);
+        
+    });
+    let mut rng = rand::thread_rng();
+    for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Create an array with random elements.
+        let mut stm_arr = TokenStream::new();
+        for _ in 0..len {
+            let lit_ret_n = Literal::u32_unsuffixed(rng.gen_range(0..u32::MAX));
+            stm_arr.extend(quote! { #lit_ret_n, });
+        }
+
+        // Read each element from an array in sequence.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+                let arr = [#stm_arr];
+                let mut idxs: Vec<usize> = (0..#lit_len).into_iter().collect();
+                let mut rng = thread_rng();
+                idxs.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                for idx in idxs {
+                    ret[0] = arr[idx];
+                }
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+/// Emits a token stream for the `rd_mat_rnd` statements.
+pub fn emit_bens_rd_mat_rnd() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Mat, Lbl::Rnd]);
+    });
+    let mut rng = rand::thread_rng();
+    for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Create match arms which return a random u32.
+        let mut stm_arm = TokenStream::new();
+        for idx in 0..len {
+            let lit_idx = Literal::u32_unsuffixed(idx);
+            let lit_ret_n = Literal::u32_unsuffixed(rng.gen_range(0..u32::MAX));
+            stm_arm.extend(quote! {
+                #lit_idx => #lit_ret_n,
+            });
+        }
+
+        // Read each element from a match in sequence.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+                let mut idxs: Vec<usize> = (0..#lit_len).into_iter().collect();
+                let mut rng = thread_rng();
+                idxs.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                for idx in idxs {
+                    ret[0] = match idx {
+                        #stm_arm
+                        _ => panic!("uh oh, no no: beyond the match limit"),
+                    }
+                }
+                ret[0]
+            })?;
         });
     }
 
