@@ -2,7 +2,7 @@
 
 Metrics for Rust code.
 
-How much does a function really cost?
+How much does a function cost?
 
 Measurements in CPU cycles.
 
