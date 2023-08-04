@@ -16,6 +16,7 @@ Measurements in CPU cycles.
     - [allocation: vector macro vs vector capacity and resize](#allocation-vector-macro-vs-vector-capacity-and-resize)
     - [sequential lookup: array vs match](#sequential-lookup-array-vs-match)
     - [random lookup: array vs match](#random-lookup-array-vs-match)
+    - [Iteration: range index vs iterator](#iteration-range-index-vs-iterator)
   - [Development notes](#development-notes)
 
 ## Usage
@@ -45,6 +46,9 @@ Options:
 ## Examples
 
 ### allocation: array vs vector macro
+
+Prefer array.
+
 ```sh
 clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp arr,mcr --trn len --cmp
 ```
@@ -61,6 +65,9 @@ clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp a
 ```
 
 ### allocation: array vs vector capacity and resize
+
+Prefer array.
+
 ```sh
 clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp arr,rsz --trn len --cmp
 ```
@@ -77,6 +84,9 @@ clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp a
 ```
 
 ### allocation: vector macro vs vector capacity and resize
+
+Prever vector capacity and resize.
+
 ```sh
 clear && cargo run -q --profile release -- --frm alc,vec --sel mdn --srt len --grp mcr,rsz --trn len --cmp
 ```
@@ -93,6 +103,9 @@ clear && cargo run -q --profile release -- --frm alc,vec --sel mdn --srt len --g
 ```
 
 ### sequential lookup: array vs match
+
+Prefer array.
+
 ```sh
 clear && cargo run -q --profile release -- --frm rd,seq --sel mdn --srt len --grp arr,mat --trn len --cmp
 ```
@@ -110,6 +123,8 @@ clear && cargo run -q --profile release -- --frm rd,seq --sel mdn --srt len --gr
 
 ### random lookup: array vs match
 
+Prefer match.
+
 ```sh
 clear && cargo run -q --profile release -- --frm rd,rnd --sel mdn --srt len --grp arr,mat --trn len --cmp
 ```
@@ -123,6 +138,25 @@ clear && cargo run -q --profile release -- --frm rd,rnd --sel mdn --srt len --gr
 ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┤
 │ ratio (max / min) ┆ 1.1 ┆ 1.1 ┆ 1.5 ┆ 1.1 ┆ 1.1 ┆ 1.2 ┆ 1.2   ┆ 1.4   │
 └───────────────────┴─────┴─────┴─────┴─────┴─────┴─────┴───────┴───────┘
+```
+
+### Iteration: range index vs iterator
+
+Prefer iterator.
+
+```sh
+clear && cargo run -q --profile release -- --frm lop --sel mdn --srt len --grp idx,itr --trn len --cmp
+```
+```sh
+┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
+│ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
+╞═══════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
+│ idx,lop           ┆ 2  ┆ 2  ┆ 2  ┆ 2   ┆ 2   ┆ 2   ┆ 6    ┆ 2    ┆ 18   ┆ 10   ┆ 10    ┆ 12    ┆ 10    ┆ 24     │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ itr,lop           ┆ 2  ┆ 2  ┆ 2  ┆ 2   ┆ 2   ┆ 2   ┆ 2    ┆ 2    ┆ 2    ┆ 10   ┆ 2     ┆ 12    ┆ 10    ┆ 22     │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ ratio (max / min) ┆ 1  ┆ 1  ┆ 1  ┆ 1   ┆ 1   ┆ 1   ┆ 3    ┆ 1    ┆ 9    ┆ 1    ┆ 5     ┆ 1     ┆ 1     ┆ 1.1    │
+└───────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
 ```
 
 ## Development notes

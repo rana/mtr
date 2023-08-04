@@ -105,8 +105,7 @@ pub fn lbl_strs_all() -> Vec<&'static str> {
 /// Returns label strings mapping to a plain enum cases.
 pub fn lbl_strs_plain() -> Vec<&'static str> {
     vec![
-        "alc", "arr", "asc", "cap", "dsc", "lop", "mat", "mcr", "mdn", "raw", "rnd", "rd", "rsz",
-        "ser", "seq", "unr", "vec", "wrt",
+        "alc", "arr", "idx", "itr", "lop", "mat", "mcr", "raw", "rnd", "rd", "rsz", "seq", "vec",
     ]
 }
 /// Returns label strings which map to struct u32 cases of an enum.
@@ -337,6 +336,8 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_rd_mat_seq,
         emit_bens_rd_arr_rnd,
         emit_bens_rd_mat_rnd,
+        emit_bens_lop_idx,
+        emit_bens_lop_itr,
     ];
     tok_bens
         .iter()
@@ -543,7 +544,7 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
         let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Arr, Lbl::Rnd]);
-        
+
     });
     let mut rng = rand::thread_rng();
     for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
@@ -619,6 +620,86 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
                         #stm_arm
                         _ => panic!("uh oh, no no: beyond the match limit"),
                     }
+                }
+                tme.borrow_mut().stop();
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub static LOP_RNG: Range<u32> = 4..18;
+
+/// Emits a token stream for the `lop_idx` statements.
+pub fn emit_bens_lop_idx() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Idx]);
+    });
+    for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Iterate a for loop with range syntax 0..len.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
+                for idx in 0..#lit_len {
+                    ret[0] = vals[idx];
+                }
+                tme.borrow_mut().stop();
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+/// Emits a token stream for the `lop_itr` statements.
+pub fn emit_bens_lop_itr() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr]);
+    });
+    for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
+        // Iterate a for loop with range syntax 0..len.
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
+                for val in vals.iter() {
+                    ret[0] = *val;
                 }
                 tme.borrow_mut().stop();
                 ret[0]
