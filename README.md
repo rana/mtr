@@ -21,18 +21,6 @@ Measurements in CPU cycles.
 ## Usage
 
 ```sh
-clear && cargo run -q --profile release -- --frm alc -d
-```
-```sh
-clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp arr,rsz
-```
-
-* Run with optimizations on:
-  * `cargo run --profile release`
-  * `rustc -C opt-level=3`
-  
-
-```sh
 > cargo run -q --profile release -- --help
 Benchmark, query, and analyze functions
 
@@ -49,6 +37,11 @@ Options:
   -d, --dbg                Print debug information
   -h, --help               Print help
 ```
+
+* Run with optimizations on. Either:
+  * `cargo run --profile release`
+  * `rustc -C opt-level=3`
+
 ## Examples
 
 ### allocation: array vs vector macro

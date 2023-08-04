@@ -46,9 +46,8 @@ pub fn emit_main_fn() -> TokenStream {
 
     stm.extend(quote! {
         #![allow(dead_code)]
-        mod ben;
         mod bens;
-        use crate::ben::*;
+        use ben::*;
         use bens::*;
         pub fn main() -> Result<()> {
             Cli::prs_and_qry(new_mtr_set()?)?;
@@ -85,14 +84,12 @@ pub fn emit_bens_imports() -> TokenStream {
     stm.extend(quote! {
         #![allow(clippy::slow_vector_initialization)]
         #![allow(clippy::needless_range_loop)]
+        use ben::*;
         use core::fmt;
         use core::hash::Hash;
         use core::str;
-        use crate::ben::*;
         use rand::seq::SliceRandom;
         use rand::thread_rng;
-        // use rand::prelude::*;
-        // use rip_shuffle::RipShuffleParallel;
     });
 
     stm
