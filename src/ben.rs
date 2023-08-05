@@ -37,7 +37,7 @@ pub struct Cli {
         required = true
     )]
     frm: Vec<String>,
-    /// Group benchmarks into one or more labels. Each label, or label set, is a group
+    /// Group benchmarks into one or more labels. Each label is a group
     #[arg(
         short,
         long,
@@ -58,7 +58,7 @@ pub struct Cli {
     /// Compare pairs of benchmarks as a ratio of max/min
     #[arg(short = 'c', long)]
     cmp: bool,
-    /// Set the number of iterations to run a benchmark function
+    /// Set the number of iterations for each benchmark function
     #[arg(short = 'i', long, value_name = "u32", default_value_t = 16)]
     itr: u32,
     /// Print debug information
@@ -137,22 +137,6 @@ impl Cli {
         }
         Ok(())
     }
-}
-
-/// A label used to aggregate, filter, and sort benchmark functions.
-pub trait Label:
-    Debug
-    + Copy
-    + Eq
-    + PartialEq
-    + Ord
-    + PartialOrd
-    + Hash
-    + Default
-    + Display
-    + EnumStructVal
-    + FromStr
-{
 }
 
 // A set of benchmark functions.
@@ -894,16 +878,6 @@ impl Ser {
     pub fn new(name: String, vals: Vec<u64>) -> Self {
         Ser { name, vals }
     }
-
-    // Returns the series as a list of strings.
-    pub fn to_vec_strs(&self) -> Vec<String> {
-        let mut ret = Vec::with_capacity(1 + self.vals.len());
-        ret.push(self.name.clone());
-        for val in self.vals.iter() {
-            ret.push(fmt_num(val));
-        }
-        ret
-    }
 }
 
 // A comparison of two series.
@@ -1041,6 +1015,22 @@ where
         // Insert a benchmark function.
         self.set.borrow().ins_prm(&all_lbls.0, f)
     }
+}
+
+/// A label used to aggregate, filter, and sort benchmark functions.
+pub trait Label:
+    Debug
+    + Copy
+    + Eq
+    + PartialEq
+    + Ord
+    + PartialOrd
+    + Hash
+    + Default
+    + Display
+    + EnumStructVal
+    + FromStr
+{
 }
 
 /// A list of labels.
