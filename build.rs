@@ -33,11 +33,25 @@ pub fn write_one_fle(fle_stm: TokenStream, fle_pth: &PathBuf) -> std::io::Result
 
 /// Emits a token stream for the main file.
 pub fn emit_main_fle() -> TokenStream {
-    let tok_fns = [emit_main_fn];
+    let tok_fns = [emit_main_imports, emit_main_fn];
     tok_fns.iter().fold(TokenStream::new(), |mut stm, tok_fn| {
         stm.extend(tok_fn());
         stm
     })
+}
+
+/// Emits a token stream for the `main` imports.
+pub fn emit_main_imports() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    stm.extend(quote! {
+        mod ben;
+        mod bens;
+        use crate::ben::*;
+        use bens::*;
+    });
+
+    stm
 }
 
 /// Emits a token stream for the `main` function.
@@ -45,14 +59,30 @@ pub fn emit_main_fn() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
-        #![allow(dead_code)]
-        mod bens;
-        use ben::*;
-        use bens::*;
         pub fn main() -> Result<()> {
             Cli::prs_and_qry(new_mtr_set()?)?;
             Ok(())
         }
+    });
+
+    stm
+}
+
+/// Emits a token stream for the `main` imports.
+pub fn emit_bens_imports() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    stm.extend(quote! {
+        #![allow(clippy::into_iter_on_ref)]
+        #![allow(clippy::needless_range_loop)]
+        #![allow(clippy::slow_vector_initialization)]
+        #![allow(dead_code)]
+        use crate::ben::*;
+        use core::fmt;
+        use core::hash::Hash;
+        use core::str;
+        use rand::seq::SliceRandom;
+        use rand::thread_rng;
     });
 
     stm
@@ -77,23 +107,7 @@ pub fn emit_bens_fle() -> TokenStream {
     ret
 }
 
-/// Emits a token stream for the `main` imports.
-pub fn emit_bens_imports() -> TokenStream {
-    let mut stm = TokenStream::new();
 
-    stm.extend(quote! {
-        #![allow(clippy::slow_vector_initialization)]
-        #![allow(clippy::needless_range_loop)]
-        use ben::*;
-        use core::fmt;
-        use core::hash::Hash;
-        use core::str;
-        use rand::seq::SliceRandom;
-        use rand::thread_rng;
-    });
-
-    stm
-}
 
 /// Returns label strings for all enum cases.
 pub fn lbl_strs_all() -> Vec<&'static str> {
@@ -106,7 +120,7 @@ pub fn lbl_strs_all() -> Vec<&'static str> {
 pub fn lbl_strs_plain() -> Vec<&'static str> {
     vec![
         "acm", "add", "alc", "arr", "chk", "cnt", "cst", "idx", "into_itr", "itr", "lop", "mat",
-        "mcr", "none", "one", "ptr", "raw", "rnd", "rd", "rsz", "seq", "u8", "unchk", "usize",
+        "mcr", "none", "one", "ptr", "raw", "rnd", "rd", "rsz", "seq", "slc", "u8", "unchk", "usize",
         "val",  "vec",
     ]
 }
@@ -364,8 +378,10 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_rd_mat_rnd,
         emit_bens_lop_idx_chk,
         emit_bens_lop_idx_unchk,
-        emit_bens_lop_itr,
-        emit_bens_lop_into_itr,
+        emit_bens_lop_itr_vec,
+        emit_bens_lop_into_itr_vec,
+        emit_bens_lop_itr_slc,
+        emit_bens_lop_into_itr_slc,
         emit_bens_cst_u8,
         emit_bens_cst_usize,
         emit_bens_acm_rd_ptr,
@@ -757,15 +773,14 @@ pub fn emit_bens_lop_idx_unchk() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `lop_itr` statements.
-pub fn emit_bens_lop_itr() -> TokenStream {
+pub fn emit_bens_lop_itr_vec() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr]);
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr, Lbl::Vec]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
@@ -795,15 +810,14 @@ pub fn emit_bens_lop_itr() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `lop_itr` statements.
-pub fn emit_bens_lop_into_itr() -> TokenStream {
+pub fn emit_bens_lop_into_itr_vec() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::IntoItr]);
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::IntoItr, Lbl::Vec]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
@@ -832,6 +846,81 @@ pub fn emit_bens_lop_into_itr() -> TokenStream {
 
     stm
 }
+
+pub fn emit_bens_lop_itr_slc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr, Lbl::Slc]);
+    });
+    for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
+                for val in vals.as_slice().iter() {
+                    ret[0] = *val;
+                }
+                tme.borrow_mut().stop();
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_lop_into_itr_slc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::IntoItr, Lbl::Slc]);
+    });
+    for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                tme.borrow_mut().start();
+                for val in vals.as_slice().into_iter() {
+                    ret[0] = *val;
+                }
+                tme.borrow_mut().stop();
+                ret[0]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
 
 pub static CST_RNG: Range<u32> = 4..18;
 

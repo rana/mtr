@@ -18,13 +18,15 @@ Measurements in CPU cycles.
     - [Lookup: Random: array vs match](#lookup-random-array-vs-match)
     - [Iteration: range index (bounds checked) vs iterator](#iteration-range-index-bounds-checked-vs-iterator)
     - [Iteration: range index bounds checked vs range index unchecked](#iteration-range-index-bounds-checked-vs-range-index-unchecked)
-    - [Iteration: iterator vs into iterator](#iteration-iterator-vs-into-iterator)
+    - [Iteration: Vector: iterator vs into iterator](#iteration-vector-iterator-vs-into-iterator)
+    - [Iteration: Slice: iterator vs into iterator](#iteration-slice-iterator-vs-into-iterator)
     - [Cast: u8 vs usize](#cast-u8-vs-usize)
     - [Accumulate: read pointer vs read de-referenced value](#accumulate-read-pointer-vs-read-de-referenced-value)
     - [Accumulate: total count vs multiple add one](#accumulate-total-count-vs-multiple-add-one)
     - [Accumulate: Unroll: Single accumulator: no unrolling vs unroll 8](#accumulate-unroll-single-accumulator-no-unrolling-vs-unroll-8)
     - [Accumulate: Unroll: 1 accumulator vs 8 accumulators](#accumulate-unroll-1-accumulator-vs-8-accumulators)
     - [Accumulate: Unroll: 8 accumulators vs 16 accumulators](#accumulate-unroll-8-accumulators-vs-16-accumulators)
+    - [Accumulate: Unroll: no unrolling vs unroll 8 with 8 accumulators](#accumulate-unroll-no-unrolling-vs-unroll-8-with-8-accumulators)
     - [Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators](#accumulate-unroll-no-unrolling-vs-unroll-16-with-16-accumulators)
   - [Development notes](#development-notes)
 
@@ -187,12 +189,12 @@ clear && cargo run -q --profile release -- --frm lop,idx --sel mdn --srt len --g
 └───────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
 ```
 
-### Iteration: iterator vs into iterator
+### Iteration: Vector: iterator vs into iterator
 
 Prefer iterator.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop --sel mdn --srt len --grp itr,into_itr --trn len --cmp
+clear && cargo run -q --profile release -- --frm lop,vec --sel mdn --srt len --grp itr,into_itr --trn len --cmp
 ```
 ```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬──────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
@@ -204,6 +206,37 @@ clear && cargo run -q --profile release -- --frm lop --sel mdn --srt len --grp i
 ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
 │ ratio (max / min) ┆ 4  ┆ 4  ┆ 4  ┆ 4   ┆ 4.5 ┆ 13.5 ┆ 12   ┆ 13   ┆ 12   ┆ 15.5 ┆ 24    ┆ 25    ┆ 6.5   ┆ 14.1   │
 └───────────────────┴────┴────┴────┴─────┴─────┴──────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
+```
+
+### Iteration: Slice: iterator vs into iterator
+
+Tie.
+
+```sh
+clear && cargo run -q --profile release -- --frm lop,slc --sel mdn --srt len --grp itr,into_itr --trn len --cmp
+```
+```sh
+┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
+│ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
+╞═══════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
+│ itr,lop,slc       ┆ 2  ┆ 4  ┆ 2  ┆ 2   ┆ 2   ┆ 2   ┆ 2    ┆ 2    ┆ 2    ┆ 2    ┆ 2     ┆ 2     ┆ 14    ┆ 20     │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ into_itr,lop,slc  ┆ 2  ┆ 2  ┆ 4  ┆ 2   ┆ 2   ┆ 2   ┆ 2    ┆ 2    ┆ 2    ┆ 2    ┆ 2     ┆ 2     ┆ 14    ┆ 22     │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ ratio (max / min) ┆ 1  ┆ 2  ┆ 2  ┆ 1   ┆ 1   ┆ 1   ┆ 1    ┆ 1    ┆ 1    ┆ 1    ┆ 1     ┆ 1     ┆ 1     ┆ 1.1    │
+└───────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
+```
+
+Note:
+```
+warning: this `.into_iter()` call is equivalent to `.iter()` and will not consume the `slice`
+     --> src/bens.rs:18207:44
+      |
+18207 |                 for val in vals.as_slice().into_iter() {
+      |                                            ^^^^^^^^^ help: call directly: `iter`
+      |
+      = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#into_iter_on_ref
+      = note: `#[warn(clippy::into_iter_on_ref)]` on by default
 ```
 
 ### Cast: u8 vs usize
@@ -303,9 +336,9 @@ clear && cargo run -q --profile release -- --frm lop,acm,unr[8] --sel mdn --srt 
 
 ### Accumulate: Unroll: 8 accumulators vs 16 accumulators
 
-Tie up to 2048 lengths.
+Tie up to 4096 lengths.
 
-Prefer 16 accumulators over 2048 lengths.
+Prefer 16 accumulators over 4096 lengths.
 
 ```sh
 clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[8]-var[8],unr[16]-var[16] --trn len --cmp
@@ -314,12 +347,33 @@ clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --g
 ┌─────────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len                     ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
 ╞═════════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
-│ acm,lop,unr(8),var(8)   ┆ 4  ┆ 10 ┆ 26 ┆ 10  ┆ 18  ┆ 48  ┆ 96   ┆ 170  ┆ 318  ┆ 630  ┆ 1,588 ┆ 3,678 ┆ 8,404 ┆ 20,150 │
+│ acm,lop,unr(8),var(8)   ┆ 6  ┆ 6  ┆ 22 ┆ 12  ┆ 30  ┆ 54  ┆ 90   ┆ 152  ┆ 280  ┆ 622  ┆ 1,918 ┆ 3,576 ┆ 8,648 ┆ 20,598 │
 ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-│ acm,lop,unr(16),var(16) ┆ 4  ┆ 10 ┆ 26 ┆ 34  ┆ 18  ┆ 42  ┆ 98   ┆ 184  ┆ 288  ┆ 628  ┆ 1,518 ┆ 3,146 ┆ 7,194 ┆ 19,812 │
+│ acm,lop,unr(16),var(16) ┆ 2  ┆ 6  ┆ 22 ┆ 30  ┆ 22  ┆ 56  ┆ 120  ┆ 168  ┆ 280  ┆ 584  ┆ 1,386 ┆ 3,126 ┆ 7,734 ┆ 19,144 │
 ├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
-│ ratio (max / min)       ┆ 1  ┆ 1  ┆ 1  ┆ 3.4 ┆ 1   ┆ 1.1 ┆ 1    ┆ 1.1  ┆ 1.1  ┆ 1    ┆ 1     ┆ 1.2   ┆ 1.2   ┆ 1      │
+│ ratio (max / min)       ┆ 3  ┆ 1  ┆ 1  ┆ 2.5 ┆ 1.4 ┆ 1   ┆ 1.3  ┆ 1.1  ┆ 1    ┆ 1.1  ┆ 1.4   ┆ 1.1   ┆ 1.1   ┆ 1.1    │
 └─────────────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
+```
+
+### Accumulate: Unroll: no unrolling vs unroll 8 with 8 accumulators
+
+Prefer no unrolling up to 1024 lengths.
+
+Prefer unrolling with 16 accumulators over 1024 lengths.
+
+```sh
+clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[0],unr[8]-var[8] --trn len --cmp
+```
+```sh
+┌───────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬────────┬────────┐
+│ len                   ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
+╞═══════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪════════╪════════╡
+│ acm,lop,unr(0)        ┆ 4  ┆ 8  ┆ 24 ┆ 10  ┆ 26  ┆ 42  ┆ 96   ┆ 178  ┆ 442  ┆ 634  ┆ 1,974 ┆ 4,366 ┆ 10,238 ┆ 22,388 │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ acm,lop,unr(8),var(8) ┆ 4  ┆ 8  ┆ 24 ┆ 10  ┆ 26  ┆ 66  ┆ 86   ┆ 176  ┆ 288  ┆ 622  ┆ 1,594 ┆ 3,574 ┆ 9,072  ┆ 20,140 │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ ratio (max / min)     ┆ 1  ┆ 1  ┆ 1  ┆ 1   ┆ 1   ┆ 1.6 ┆ 1.1  ┆ 1    ┆ 1.5  ┆ 1    ┆ 1.2   ┆ 1.2   ┆ 1.1    ┆ 1.1    │
+└───────────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴────────┴────────┘
 ```
 
 ### Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators

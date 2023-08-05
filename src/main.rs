@@ -1,6 +1,6 @@
-#![allow(dead_code)]
+mod ben;
 mod bens;
-use ben::*;
+use crate::ben::*;
 use bens::*;
 pub fn main() -> Result<()> {
     Cli::prs_and_qry(new_mtr_set()?)?;
