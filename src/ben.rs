@@ -6,11 +6,12 @@
 //! * Display data in command-line tables.
 //! * Query benchmarks from the command-line.
 
-#![allow(clippy::borrowed_box)]
+#![allow(dead_code)]
 
-use clap::{arg, Parser};
+use clap::{arg, command, Args, Parser};
 use comfy_table::{presets::UTF8_FULL, Cell, Color, Row, Table};
 use itertools::Itertools;
+use once_cell::sync::OnceCell;
 use std::{
     arch::x86_64,
     cell::RefCell,
@@ -27,24 +28,33 @@ use std::{
 /// Benchmark, query, and analyze functions
 #[derive(Parser, Debug)]
 pub struct Cli {
+    #[command(flatten)]
+    qry: Qry,
+    /// Print debug information
+    #[arg(short = 'd', long)]
+    dbg: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct Qry {
     /// Run benchmarks from one or more labels
     #[arg(
-        short,
-        long,
-        value_name = "lbl",
-        num_args = 1..,
-        value_delimiter = ',',
-        required = true
-    )]
+            short,
+            long,
+            value_name = "lbl",
+            num_args = 1..,
+            value_delimiter = ',',
+            required = true
+        )]
     frm: Vec<String>,
     /// Group benchmarks into one or more labels. Each label is a group
     #[arg(
-        short,
-        long,
-        value_names = ["lbl", "lbl-lbl"],
-        num_args = 1..,
-        value_delimiter = ','
-    )]
+            short,
+            long,
+            value_names = ["lbl", "lbl-lbl"],
+            num_args = 1..,
+            value_delimiter = ','
+        )]
     grp: Option<Vec<String>>,
     /// Sort benchmarks by a struct label
     #[arg(short = 's', long, value_name = "lbl[struct]")]
@@ -61,9 +71,6 @@ pub struct Cli {
     /// Set the number of iterations for each benchmark function
     #[arg(short = 'i', long, value_name = "u32", default_value_t = 16)]
     itr: u32,
-    /// Print debug information
-    #[arg(short = 'd', long)]
-    dbg: bool,
 }
 
 impl Cli {
@@ -76,65 +83,13 @@ impl Cli {
         String: From<<L as FromStr>::Err>,
     {
         let cli = Cli::parse();
-        cli.dbg.then(|| println!("{:?}", cli));
-        cli.qry(set)?;
-        Ok(())
-    }
-
-    /// Query the specified `Set` with command-line parameters.
-    ///
-    /// Results are printed on the console.
-    pub fn qry<L>(&self, set: Set<L>) -> Result<()>
-    where
-        L: Label,
-        String: From<<L as FromStr>::Err>,
-    {
-        self.dbg.then(|| println!("{:?}", set));
-
-        // Query benchmark functions.
-        let frm_lbls = Lbls::try_from(&self.frm)?;
-        match set.frm(&frm_lbls) {
-            None => {
-                println!("No matches")
-            }
-            Some(frm) => {
-                self.dbg.then(|| println!("{:?}", frm));
-
-                // Run benchmark functions.
-                let run = frm.run(self.itr, &self.srt, &self.sel)?;
-                self.dbg.then(|| println!("{:?}", run));
-                match &self.grp {
-                    None => {
-                        println!("{}", run);
-                    }
-                    Some(grp_lbl_strs) => {
-                        // Group benchmark results.
-                        let grp_lbls = lbls_try_from(grp_lbl_strs)?;
-                        let grps = run.grp(&grp_lbls, &self.srt)?;
-                        self.dbg.then(|| println!("{:?}", grps));
-
-                        match &self.trn {
-                            None => {
-                                println!("{}", grps);
-                            }
-                            Some(trn_str) => {
-                                // Transpose groups to series.
-                                let trn_lbl = L::from_str(trn_str)?;
-                                let sers = grps.ser(trn_lbl)?;
-                                self.dbg.then(|| println!("{:?}", sers));
-                                if !self.cmp {
-                                    println!("{}", sers);
-                                } else {
-                                    let cmps = sers.cmp()?;
-                                    self.dbg.then(|| println!("{:?}", cmps));
-                                    println!("{}", cmps);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if let Err(e) = DBG.set(cli.dbg) {
+            return Err(e.to_string());
         }
+        let dbg = DBG.get().unwrap();
+        dbg.then(|| println!("{:?}", cli));
+        dbg.then(|| println!("{:?}", set));
+        set.qry(&cli.qry)?;
         Ok(())
     }
 }
@@ -157,6 +112,7 @@ where
 impl<L> Set<L>
 where
     L: Label,
+    String: From<<L as FromStr>::Err>,
 {
     // Returns a new set of benchmark functions.
     #[allow(clippy::new_without_default)]
@@ -173,6 +129,60 @@ where
     /// Useful for appending redundant labels.
     pub fn sec(&self, lbls: &[L]) -> Sec<L> {
         Sec::new(lbls, Rc::new(RefCell::new(self)))
+    }
+
+    /// Queries the set.
+    ///
+    /// Results are printed on the console.
+    pub fn qry(&self, qry: &Qry) -> Result<()> {
+        let dbg = DBG.get().unwrap();
+        dbg.then(|| println!("{:?}", qry));
+
+        // Query benchmark functions.
+        let frm_lbls = Lbls::try_from(&qry.frm)?;
+        match self.frm(&frm_lbls) {
+            None => {
+                println!("No matches")
+            }
+            Some(frm) => {
+                dbg.then(|| println!("{:?}", frm));
+
+                // Run benchmark functions.
+                let run = frm.run(qry.itr, &qry.srt, &qry.sel)?;
+                dbg.then(|| println!("{:?}", run));
+                match &qry.grp {
+                    None => {
+                        println!("{}", run);
+                    }
+                    Some(grp_lbl_strs) => {
+                        // Group benchmark results.
+                        let grp_lbls = lbls_try_from(grp_lbl_strs)?;
+                        let grps = run.grp(&grp_lbls, &qry.srt)?;
+                        dbg.then(|| println!("{:?}", grps));
+
+                        match &qry.trn {
+                            None => {
+                                println!("{}", grps);
+                            }
+                            Some(trn_str) => {
+                                // Transpose groups to series.
+                                let trn_lbl = L::from_str(trn_str)?;
+                                let sers = grps.ser(trn_lbl)?;
+                                dbg.then(|| println!("{:?}", sers));
+                                if !qry.cmp {
+                                    println!("{}", sers);
+                                } else {
+                                    let cmps = sers.cmp()?;
+                                    dbg.then(|| println!("{:?}", cmps));
+                                    println!("{}", cmps);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Insert a benchmark function to the set.
@@ -992,6 +1002,7 @@ where
     where
         F: FnMut() -> O,
         F: 'static,
+        String: From<<L as FromStr>::Err>,
     {
         // Add section labels.
         let mut all_lbls = self.lbls.clone();
@@ -1007,6 +1018,7 @@ where
     where
         F: FnMut(Rc<RefCell<Tme>>) -> O,
         F: 'static,
+        String: From<<L as FromStr>::Err>,
     {
         // Add section labels.
         let mut all_lbls = self.lbls.clone();
@@ -1300,3 +1312,6 @@ where
 
 /// A Result with a String error.
 pub type Result<T> = std::result::Result<T, String>;
+
+/// Returns true when printing debugging information.
+pub static DBG: OnceCell<bool> = OnceCell::new();
