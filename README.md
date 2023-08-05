@@ -25,6 +25,7 @@ Measurements in CPU cycles.
     - [Accumulate: Unroll: Single accumulator: no unrolling vs unroll 8](#accumulate-unroll-single-accumulator-no-unrolling-vs-unroll-8)
     - [Accumulate: Unroll: 1 accumulator vs 8 accumulators](#accumulate-unroll-1-accumulator-vs-8-accumulators)
     - [Accumulate: Unroll: 8 accumulators vs 16 accumulators](#accumulate-unroll-8-accumulators-vs-16-accumulators)
+    - [Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators](#accumulate-unroll-no-unrolling-vs-unroll-16-with-16-accumulators)
   - [Development notes](#development-notes)
 
 ## Usage
@@ -321,6 +322,26 @@ clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --g
 └─────────────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
 ```
 
+### Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators
+
+Prefer no unrolling up to 2048 lengths.
+
+Prefer unrolling with 16 accumulators over 2048 lengths.
+
+```sh
+clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[0],unr[16]-var[16] --trn len --cmp
+```
+```sh
+┌─────────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
+│ len                     ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
+╞═════════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
+│ acm,lop,unr(0)          ┆ 8  ┆ 12 ┆ 28 ┆ 14  ┆ 30  ┆ 48  ┆ 98   ┆ 192  ┆ 348  ┆ 670  ┆ 1,898 ┆ 4,576 ┆ 9,636 ┆ 21,654 │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ acm,lop,unr(16),var(16) ┆ 8  ┆ 12 ┆ 28 ┆ 38  ┆ 36  ┆ 76  ┆ 142  ┆ 162  ┆ 304  ┆ 630  ┆ 1,748 ┆ 3,826 ┆ 8,920 ┆ 21,422 │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌┤
+│ ratio (max / min)       ┆ 1  ┆ 1  ┆ 1  ┆ 2.7 ┆ 1.2 ┆ 1.6 ┆ 1.4  ┆ 1.2  ┆ 1.1  ┆ 1.1  ┆ 1.1   ┆ 1.2   ┆ 1.1   ┆ 1      │
+└─────────────────────────┴────┴────┴────┴─────┴─────┴─────┴──────┴──────┴──────┴──────┴───────┴───────┴───────┴────────┘
+```
 
 
 ## Development notes
