@@ -302,9 +302,9 @@ clear && cargo run -q --profile release -- --frm lop,acm,unr[8] --sel mdn --srt 
 
 ### Accumulate: Unroll: 8 accumulators vs 16 accumulators
 
-Tie up to 1024 lengths.
+Tie up to 2048 lengths.
 
-Prefer 16 accumulators over 1024 lengths.
+Prefer 16 accumulators over 2048 lengths.
 
 ```sh
 clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[8]-var[8],unr[16]-var[16] --trn len --cmp
