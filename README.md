@@ -49,6 +49,9 @@ Options:
   -d, --dbg                Print debug information
   -h, --help               Print help
 ```
+```sh
+clear && cargo run -q --profile release -- -d
+```
 
 * Run with optimizations on. Either:
   * `cargo run --profile release`
