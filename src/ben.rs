@@ -701,6 +701,27 @@ where
             sers.push(Ser::new(name, vals));
         }
 
+        // Ensure at least one series exists.
+        if sers.is_empty() {
+            bail!("empty series: group transpose didn't produce any series");
+        }
+
+        // Ensure series have equal lengths.
+        if sers.len() > 1 {
+            let fst_vals_len = sers[0].vals.len();
+            for cur in sers.iter().skip(1) {
+                if cur.vals.len() != fst_vals_len {
+                    bail!(
+                        "uneven series lengths: ('{}' len:{}, '{}' len:{})",
+                        cur.name,
+                        cur.vals.len(),
+                        sers[0].name,
+                        fst_vals_len,
+                    );
+                }
+            }
+        }
+
         Ok(Sers(sers))
     }
 }

@@ -92,7 +92,6 @@ pub fn emit_main_cli_types() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `main` imports.
 pub fn emit_bens_imports() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -112,7 +111,6 @@ pub fn emit_bens_imports() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `bens` module.
 pub fn emit_bens_fle() -> TokenStream {
     let tok_fns = [
         emit_bens_imports,
@@ -150,12 +148,11 @@ pub fn lbl_strs_plain() -> Vec<&'static str> {
 }
 /// Returns label strings which map to struct u32 cases of an enum.
 pub fn lbl_strs_struct_u32() -> Vec<&'static str> {
-    vec!["len", "unr", "var"]
+    vec!["len", "pll", "unr", "var"]
 }
 pub const LBL_NAM: &str = "Lbl";
 pub const LBL_VAL_DFLT: &str = "raw";
 
-/// Emits a token stream for the `Lbl` enum.
 pub fn emit_bens_lbl_enum() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -200,7 +197,6 @@ pub fn emit_bens_lbl_enum() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for `Lbl` implementing `Display`.
 pub fn emit_bens_lbl_impl_display() -> TokenStream {
     let mut stm_0 = TokenStream::new();
     let mut stm_1 = TokenStream::new();
@@ -254,7 +250,6 @@ pub fn emit_bens_lbl_impl_display() -> TokenStream {
     stm_0
 }
 
-/// Emits a token stream for `Lbl` implementing `EnumStructVal`.
 pub fn emit_bens_lbl_impl_enumstructval() -> TokenStream {
     let mut stm_0 = TokenStream::new();
     let mut stm_1 = TokenStream::new();
@@ -292,7 +287,6 @@ pub fn emit_bens_lbl_impl_enumstructval() -> TokenStream {
     stm_0
 }
 
-/// Emits a token stream for `Lbl` implementing `Label`.
 pub fn emit_bens_lbl_impl_label() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -305,7 +299,6 @@ pub fn emit_bens_lbl_impl_label() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `run_qrys` function.
 pub fn emit_bens_run_mtr_qrys() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -474,8 +467,19 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
             //     cmp: true,
             //     itr,
             // })?;
-            // Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators
-            set.qry(Qry{
+            // // Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]],
+            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+             // Accumulate: Parallel: ???
+             set.qry(Qry{
                 frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]],
                 grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]]),
                 srt: Some(Lbl::Len(0)),
@@ -493,7 +497,6 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `new_mtr_set` function.
 pub fn emit_bens_new_mtr_set() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -531,6 +534,7 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_acm_unr_8_var_1,
         emit_bens_acm_unr_8_var_8,
         emit_bens_acm_unr_16_var_16,
+        emit_bens_acm_pll_2_var_1,
     ];
     tok_bens
         .iter()
@@ -550,7 +554,6 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
 
 pub static ALC_RNG: Range<u32> = 4..18;
 
-/// Emits a token stream for the `alc_arr` statements.
 pub fn emit_bens_alc_arr() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -577,7 +580,6 @@ pub fn emit_bens_alc_arr() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `alc_vec_rsz` statements.
 pub fn emit_bens_alc_vec_rsz() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -608,7 +610,6 @@ pub fn emit_bens_alc_vec_rsz() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `alc_vec_mcr` statements.
 pub fn emit_bens_alc_vec_mcr() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -637,7 +638,6 @@ pub fn emit_bens_alc_vec_mcr() -> TokenStream {
 
 pub static RD_RNG: Range<u32> = 4..12;
 
-/// Emits a token stream for the `rd_arr_seq` statements.
 pub fn emit_bens_rd_arr_seq() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -680,7 +680,6 @@ pub fn emit_bens_rd_arr_seq() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `rd_mat_seq` statements.
 pub fn emit_bens_rd_mat_seq() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -728,7 +727,6 @@ pub fn emit_bens_rd_mat_seq() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `rd_arr_rnd` statements.
 pub fn emit_bens_rd_arr_rnd() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -777,7 +775,6 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `rd_mat_rnd` statements.
 pub fn emit_bens_rd_mat_rnd() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -832,7 +829,6 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
 
 pub static LOP_RNG: Range<u32> = 4..18;
 
-/// Emits a token stream for the `lop_idx_chk` statements.
 pub fn emit_bens_lop_idx_chk() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -871,7 +867,6 @@ pub fn emit_bens_lop_idx_chk() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `lop_idx_unchk` statements.
 pub fn emit_bens_lop_idx_unchk() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1063,7 +1058,6 @@ pub fn emit_bens_lop_slc_into_itr() -> TokenStream {
 
 pub static CST_RNG: Range<u32> = 4..18;
 
-/// Emits a token stream for the `cst_u8` statements.
 pub fn emit_bens_cst_u8() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1101,7 +1095,6 @@ pub fn emit_bens_cst_u8() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `cst_usize` statements.
 pub fn emit_bens_cst_usize() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1141,7 +1134,6 @@ pub fn emit_bens_cst_usize() -> TokenStream {
 
 pub static ACM_RNG: Range<u32> = 4..18;
 
-/// Emits a token stream for the `acm_rd_ptr` statements.
 pub fn emit_bens_acm_rd_ptr() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1179,7 +1171,6 @@ pub fn emit_bens_acm_rd_ptr() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_rd_val` statements.
 pub fn emit_bens_acm_rd_val() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1218,7 +1209,6 @@ pub fn emit_bens_acm_rd_val() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_add_cnt` statements.
 pub fn emit_bens_acm_add_cnt() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1258,7 +1248,6 @@ pub fn emit_bens_acm_add_cnt() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_add_one` statements.
 pub fn emit_bens_acm_add_one() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1297,7 +1286,6 @@ pub fn emit_bens_acm_add_one() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_unr_0` statements.
 pub fn emit_bens_acm_unr_0() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1337,7 +1325,6 @@ pub fn emit_bens_acm_unr_0() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_unr_8_one_var_1` statements.
 pub fn emit_bens_acm_unr_8_var_1() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1384,7 +1371,6 @@ pub fn emit_bens_acm_unr_8_var_1() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_unr_8_var_8` statements.
 pub fn emit_bens_acm_unr_8_var_8() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1432,7 +1418,6 @@ pub fn emit_bens_acm_unr_8_var_8() -> TokenStream {
     stm
 }
 
-/// Emits a token stream for the `acm_unr_16_var_16` statements.
 pub fn emit_bens_acm_unr_16_var_16() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1475,6 +1460,47 @@ pub fn emit_bens_acm_unr_16_var_16() -> TokenStream {
                 ret_all += ret[8] + ret[9] + ret[10] + ret[11] + ret[12] + ret[13] + ret[14] + ret[15];
                 tme.borrow_mut().stop();
                 ret_all
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub static PLL_RNG: Range<u32> = 4..18;
+
+pub fn emit_bens_acm_pll_2_var_1() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(1)]);
+    });
+    for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 1];
+                let mut n: usize = 0;
+                tme.borrow_mut().start();
+                while n < #lit_len {
+                    ret[0] += vals[n];
+                    n += 1;
+                }
+                tme.borrow_mut().stop();
+                ret[0]
             })?;
         });
     }

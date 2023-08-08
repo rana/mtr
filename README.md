@@ -33,24 +33,7 @@ Measurements in CPU cycles.
 ## Usage
 
 ```sh
-> cargo run -q --profile release -- --help
-Benchmark, query, and analyze functions
-
-Usage: mtr [OPTIONS] --frm <lbl>...
-
-Options:
-  -f, --frm <lbl>...       Run benchmarks from one or more labels
-  -g, --grp <lbl>...       Group benchmarks into one or more labels. Each label is a group
-  -s, --srt <lbl[struct]>  Sort benchmarks by a struct label
-  -x, --sel <lbl[stat]>    Select and apply a statisitcal function
-  -t, --trn <lbl[struct]>  Transpose groups to series with the specified struct label
-  -c, --cmp                Compare pairs of benchmarks as a ratio of max/min
-  -i, --itr <u32>          Set the number of iterations to run a benchmark function [default: 16]
-  -d, --dbg                Print debug information
-  -h, --help               Print help
-```
-```sh
-clear && cargo run -q --profile release -- -d
+clear && cargo run -q --profile release
 ```
 
 * Run with optimizations on. Either:
@@ -63,9 +46,6 @@ clear && cargo run -q --profile release -- -d
 
 Prefer array.
 
-```sh
-clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp arr,mcr --trn len --cmp
-```
 ```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬───────┬───────┬───────┬───────┬────────┬────────┬────────┬─────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1,024 ┆ 2,048 ┆ 4,096 ┆ 8,192 ┆ 16,384 ┆ 32,768 ┆ 65,536 ┆ 131,072 │
@@ -83,9 +63,6 @@ clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp a
 Prefer array.
 
 ```sh
-clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp arr,rsz --trn len --cmp
-```
-```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬────────┬────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
 ╞═══════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪════════╪════════╡
@@ -101,9 +78,6 @@ clear && cargo run -q --profile release -- --frm alc --sel mdn --srt len --grp a
 
 Prever vector capacity and resize.
 
-```sh
-clear && cargo run -q --profile release -- --frm alc,vec --sel mdn --srt len --grp mcr,rsz --trn len --cmp
-```
 ```sh
 ┌───────────────────┬────┬─────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┬────────┐
 │ len               ┆ 16 ┆ 32  ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192  ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
@@ -121,9 +95,6 @@ clear && cargo run -q --profile release -- --frm alc,vec --sel mdn --srt len --g
 Prefer array.
 
 ```sh
-clear && cargo run -q --profile release -- --frm rd,seq --sel mdn --srt len --grp arr,mat --trn len --cmp
-```
-```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬───────┬───────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1,024 ┆ 2,048 │
 ╞═══════════════════╪════╪════╪════╪═════╪═════╪═════╪═══════╪═══════╡
@@ -139,9 +110,6 @@ clear && cargo run -q --profile release -- --frm rd,seq --sel mdn --srt len --gr
 
 Prefer match.
 
-```sh
-clear && cargo run -q --profile release -- --frm rd,rnd --sel mdn --srt len --grp arr,mat --trn len --cmp
-```
 ```sh
 ┌───────────────────┬─────┬─────┬─────┬─────┬─────┬─────┬───────┬───────┐
 │ len               ┆ 16  ┆ 32  ┆ 64  ┆ 128 ┆ 256 ┆ 512 ┆ 1024  ┆ 2048  │
@@ -159,9 +127,6 @@ clear && cargo run -q --profile release -- --frm rd,rnd --sel mdn --srt len --gr
 Prefer iterator.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop --sel mdn --srt len --grp idx,itr --trn len --cmp
-```
-```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
 ╞═══════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
@@ -177,9 +142,6 @@ clear && cargo run -q --profile release -- --frm lop --sel mdn --srt len --grp i
 
 Tie.
 
-```sh
-clear && cargo run -q --profile release -- --frm lop,idx --sel mdn --srt len --grp chk,unchk --trn len --cmp
-```
 ```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
@@ -197,9 +159,6 @@ clear && cargo run -q --profile release -- --frm lop,idx --sel mdn --srt len --g
 Prefer iterator.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop,vec --sel mdn --srt len --grp itr,into_itr --trn len --cmp
-```
-```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬──────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512  ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
 ╞═══════════════════╪════╪════╪════╪═════╪═════╪══════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
@@ -215,9 +174,6 @@ clear && cargo run -q --profile release -- --frm lop,vec --sel mdn --srt len --g
 
 Tie.
 
-```sh
-clear && cargo run -q --profile release -- --frm lop,slc --sel mdn --srt len --grp itr,into_itr --trn len --cmp
-```
 ```sh
 ┌───────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
@@ -247,9 +203,6 @@ warning: this `.into_iter()` call is equivalent to `.iter()` and will not consum
 Prefer usize.
 
 ```sh
-clear && cargo run -q --profile release -- --frm cst --sel mdn --srt len --grp u8,usize --trn len --cmp
-```
-```sh
 ┌───────────────────┬─────┬────┬─────┬─────┬─────┬─────┬───────┬───────┬───────┬───────┬────────┬────────┬────────┬─────────┐
 │ len               ┆ 16  ┆ 32 ┆ 64  ┆ 128 ┆ 256 ┆ 512 ┆ 1024  ┆ 2048  ┆ 4096  ┆ 8192  ┆ 16384  ┆ 32768  ┆ 65536  ┆ 131072  │
 ╞═══════════════════╪═════╪════╪═════╪═════╪═════╪═════╪═══════╪═══════╪═══════╪═══════╪════════╪════════╪════════╪═════════╡
@@ -265,9 +218,6 @@ clear && cargo run -q --profile release -- --frm cst --sel mdn --srt len --grp u
 
 Tie. Slightly prefer read de-referenced value.
 
-```sh
-clear && cargo run -q --profile release -- --frm acm,rd --sel mdn --srt len --grp ptr,val --trn len --cmp
-```
 ```sh
 ┌───────────────────┬─────┬────┬────┬─────┬─────┬─────┬───────┬───────┬───────┬───────┬────────┬────────┬────────┬─────────┐
 │ len               ┆ 16  ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024  ┆ 2048  ┆ 4096  ┆ 8192  ┆ 16384  ┆ 32768  ┆ 65536  ┆ 131072  │
@@ -285,9 +235,6 @@ clear && cargo run -q --profile release -- --frm acm,rd --sel mdn --srt len --gr
 Prefer total count.
 
 ```sh
-clear && cargo run -q --profile release -- --frm acm,add --sel mdn --srt len --grp one,cnt --trn len --cmp
-```
-```sh
 ┌───────────────────┬────┬────┬─────┬─────┬─────┬─────┬───────┬───────┬───────┬────────┬────────┬────────┬────────┬─────────┐
 │ len               ┆ 16 ┆ 32 ┆ 64  ┆ 128 ┆ 256 ┆ 512 ┆ 1024  ┆ 2048  ┆ 4096  ┆ 8192   ┆ 16384  ┆ 32768  ┆ 65536  ┆ 131072  │
 ╞═══════════════════╪════╪════╪═════╪═════╪═════╪═════╪═══════╪═══════╪═══════╪════════╪════════╪════════╪════════╪═════════╡
@@ -304,9 +251,6 @@ clear && cargo run -q --profile release -- --frm acm,add --sel mdn --srt len --g
 Prefer no unrolling.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[0],unr[8]-var[1] --trn len --cmp
-```
-```sh
 ┌───────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┬────────┐
 │ len                   ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192  ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
 ╞═══════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╪════════╡
@@ -322,9 +266,6 @@ clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --g
 
 Prefer 8 accumulators.
 
-```sh
-clear && cargo run -q --profile release -- --frm lop,acm,unr[8] --sel mdn --srt len --grp var[1],var[8] --trn len --cmp
-```
 ```sh
 ┌───────────────────────┬─────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┬────────┐
 │ len                   ┆ 16  ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192  ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
@@ -344,9 +285,6 @@ Tie up to 4096 lengths.
 Prefer 16 accumulators over 4096 lengths.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[8]-var[8],unr[16]-var[16] --trn len --cmp
-```
-```sh
 ┌─────────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len                     ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
 ╞═════════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪═══════╪════════╡
@@ -365,9 +303,6 @@ Prefer no unrolling up to 1024 lengths.
 Prefer unrolling with 16 accumulators over 1024 lengths.
 
 ```sh
-clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[0],unr[8]-var[8] --trn len --cmp
-```
-```sh
 ┌───────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬────────┬────────┐
 │ len                   ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536  ┆ 131072 │
 ╞═══════════════════════╪════╪════╪════╪═════╪═════╪═════╪══════╪══════╪══════╪══════╪═══════╪═══════╪════════╪════════╡
@@ -385,9 +320,6 @@ Prefer no unrolling up to 4096 lengths.
 
 Prefer unrolling with 16 accumulators over 4096 lengths.
 
-```sh
-clear && cargo run -q --profile release -- --frm lop,acm --sel mdn --srt len --grp unr[0],unr[16]-var[16] --trn len --cmp
-```
 ```sh
 ┌─────────────────────────┬────┬────┬────┬─────┬─────┬─────┬──────┬──────┬──────┬──────┬───────┬───────┬───────┬────────┐
 │ len                     ┆ 16 ┆ 32 ┆ 64 ┆ 128 ┆ 256 ┆ 512 ┆ 1024 ┆ 2048 ┆ 4096 ┆ 8192 ┆ 16384 ┆ 32768 ┆ 65536 ┆ 131072 │
