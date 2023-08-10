@@ -655,10 +655,17 @@ where
 {
     // Transpose groups to series with the specified transpose label.
     pub fn ser(&self, trn: L) -> Result<Sers> {
+        let dbg = DBG.get().unwrap();
+
         let mut sers = Vec::<Ser>::with_capacity(1 + self.0.len());
 
         // Iterate through each group.
         for grp in self.0.iter() {
+            dbg.then(|| println!("group ser:{:?}", join(&grp.lbls, None)));
+            dbg.then(|| println!("group ser:{:?}", join(&grp.dats[0].lbls, None)));
+            dbg.then(|| println!("group ser:{:?}", &grp.dats));
+            dbg.then(|| println!("---"));
+
             // Create label series from first group.
             if sers.is_empty() {
                 let mut trn_vals = Vec::with_capacity(grp.dats.len());
@@ -1021,7 +1028,7 @@ pub trait EnumStructVal {
 /// // your benchmark code
 /// t.stop();
 /// ```
-pub struct Tme(u64);
+pub struct Tme(pub u64);
 impl Tme {
     /// Starts the processor timer.
     pub fn start(&mut self) {
@@ -1125,12 +1132,14 @@ where
 
 /// Returns a formatted f32 rounded to one decimal place.
 ///
-/// '.0' suffix is removed.
+/// Decimal place is removed if the value is greater than or equal to 10.0;
+/// less than or equal to -10.0, or ends with '.0'.
 ///
-/// Comma separator for values to the left of the floating point.
+/// Commas are added for values with more than three digits to the left
+/// of the floating point.
 pub fn fmt_f32(v: f32) -> String {
     let mut s = format!("{:.1}", v);
-    if s.ends_with('0') {
+    if v >= 10.0 || v <= -10.0 || s.ends_with(".0") {
         s.drain(s.len() - 2..);
     }
     fmt_num(s)
@@ -1138,14 +1147,6 @@ pub fn fmt_f32(v: f32) -> String {
 
 /// Returns true when printing debugging information.
 pub static DBG: OnceCell<bool> = OnceCell::new();
-
-// /// A Result with a String error.
-// pub type Result<T> = std::result::Result<T, BenError>;
-
-// #[derive(Error, Debug)]
-// pub enum BenError {
-//     // See `thiserror` https://docs.rs/thiserror/1.0.44/thiserror/.
-// }
 
 /// Finds a matching label.
 ///

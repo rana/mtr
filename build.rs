@@ -47,10 +47,11 @@ pub fn emit_main_imports() -> TokenStream {
     stm.extend(quote! {
         mod ben;
         mod bens;
-        use crate::ben::*;
-        use bens::*;
+        mod itr;
         use anyhow::{bail, Result};
+        use bens::*;
         use clap::{arg, Parser};
+        use crate::ben::*;
     });
 
     stm
@@ -102,10 +103,16 @@ pub fn emit_bens_imports() -> TokenStream {
         #![allow(dead_code)]
         use anyhow::{bail, Result};
         use crate::ben::*;
+        use crate::itr::*;
         use rand::seq::SliceRandom;
         use rand::thread_rng;
+        use std::borrow::Borrow;
         use std::fmt;
         use std::hash::Hash;
+        use std::sync::Arc;
+        use std::thread::{self, JoinHandle};
+        use std::sync::mpsc::channel;
+        use threadpool::ThreadPool;
     });
 
     stm
@@ -141,8 +148,8 @@ pub fn lbl_strs_all() -> Vec<&'static str> {
 /// Returns label strings mapping to a plain enum cases.
 pub fn lbl_strs_plain() -> Vec<&'static str> {
     vec![
-        "acm", "add", "alc", "arr", "chk", "cnt", "cst", "idx", "into_itr", "itr", "lop", "mat",
-        "mcr", "none", "one", "ptr", "raw", "rnd", "rd", "rsz", "seq", "slc", "u8", "unchk", "usize",
+        "acm", "add", "alc", "arr", "chk", "cnt", "cst", "idx", "into_itr", "itr", "join", "lop", "mat",
+        "mcr", "mpsc", "none", "one", "ptr", "raw", "rnd", "rd", "rsz", "seq", "slc", "u8", "unchk", "usize",
         "val",  "vec",
     ]
 }
@@ -478,17 +485,93 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
             //     itr,
             // })?;
 
-             // Accumulate: Parallel: ???
-             set.qry(Qry{
-                frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]],
-                grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]]),
+            // // Accumulate: Parallel: single thread, single accumulator vs 2 threads, 2 accumulators, join
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]],
+            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // // Accumulate: Parallel: single thread, single accumulator  vs 2 threads, 2 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // // Accumulate: Parallel: single thread, 2 accumulators vs 2 threads, 2 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // // Accumulate: Parallel: 2 threads, 2 accumulators, join vs 2 threads, 2 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // // Accumulate: Parallel: 2 threads, 2 accumulators, mspc vs 4 threads, 4 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // // Accumulate: Parallel: 1 thread, 1 accumulator vs 4 threads, 4 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+            
+            // // Accumulate: Parallel: 4 threads, 4 accumulators, mspc vs 8 threads, 8 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]],
+            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]]),
+            //     srt: Some(Lbl::Len(0)),
+            //     sta: Some(Sta::Mdn),
+            //     trn: Some(Lbl::Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
+
+            // Accumulate: Parallel: 8 threads, 8 accumulators, mspc vs 16 threads, 16 accumulators, mpsc
+            set.qry(Qry{
+                frm: vec![vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]],
+                grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]]),
                 srt: Some(Lbl::Len(0)),
                 sta: Some(Sta::Mdn),
                 trn: Some(Lbl::Len(0)),
                 cmp: true,
                 itr,
             })?;
-            
 
             Ok(())
         }
@@ -531,10 +614,15 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
         emit_bens_acm_add_cnt,
         emit_bens_acm_add_one,
         emit_bens_acm_unr_0,
+        emit_bens_acm_unr_2_var_2,
         emit_bens_acm_unr_8_var_1,
         emit_bens_acm_unr_8_var_8,
         emit_bens_acm_unr_16_var_16,
-        emit_bens_acm_pll_2_var_1,
+        emit_bens_acm_pll_2_var_2_join,
+        emit_bens_acm_pll_2_var_2_mpsc,
+        emit_bens_acm_pll_4_var_4_mpsc,
+        emit_bens_acm_pll_8_var_8_mpsc,
+        emit_bens_acm_pll_16_var_16_mpsc,
     ];
     tok_bens
         .iter()
@@ -1325,6 +1413,46 @@ pub fn emit_bens_acm_unr_0() -> TokenStream {
     stm
 }
 
+pub fn emit_bens_acm_unr_2_var_2() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)]);
+    });
+    for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rng = thread_rng();
+                vals.shuffle(&mut rng);
+                let mut ret = [0u32; 2];
+                let mut n: usize = 0;
+                tme.borrow_mut().start();
+                while n < #lit_len {
+                    ret[0] += vals[n];
+                    ret[1] += vals[n + 1];
+                    n += 2;
+                }
+                tme.borrow_mut().stop();
+                ret[0] + ret[1]
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
 pub fn emit_bens_acm_unr_8_var_1() -> TokenStream {
     let mut stm = TokenStream::new();
 
@@ -1476,31 +1604,342 @@ pub fn emit_bens_acm_unr_16_var_16() -> TokenStream {
 
 pub static PLL_RNG: Range<u32> = 4..18;
 
-pub fn emit_bens_acm_pll_2_var_1() -> TokenStream {
+// pub fn emit_bens_acm_pll_2_var_2() -> TokenStream {
+//     let mut stm = TokenStream::new();
+
+//     // sec: inner
+//     let mut stm_inr = TokenStream::new();
+//     let idn_sec = Ident::new("sec", Span::call_site());
+//     stm_inr.extend(quote! {
+//         let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(22), Lbl::Var(2), Lbl::Join]);
+//     });
+//     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+//         let lit_len = Literal::u32_unsuffixed(len);
+//         stm_inr.extend(quote! {
+//             #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+//                 // Create a list of random u32s.
+//                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+//                 let mut rnd_rng = thread_rng();
+//                 vals.shuffle(&mut rnd_rng);
+//                 let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+//                 // Sum the list of values in parallel.
+//                 // Use a separate accumulator in each thread.
+//                 let thd_cnt: usize = 2;
+//                 let mut hndls: Vec<JoinHandle<(u32, Tme)>> = Vec::with_capacity(thd_cnt);
+//                 for rng in rngs(thd_cnt, vals.len()) {
+//                     let vals_clone = vals.clone();
+//                     let hndl = thread::spawn(move || {
+//                         let mut thd_tme = Tme(0);
+//                         thd_tme.start();
+//                         let mut acm: u32 = 0;
+//                         let vals_read: &Vec<u32> = vals_clone.borrow();
+//                         for idx in rng {
+//                             acm += vals_read[idx];
+//                         }
+//                         thd_tme.stop();
+//                         (acm, thd_tme)
+//                     });
+//                     hndls.push(hndl);
+//                 }
+
+//                 // Combine the separate accumulators into a single value.
+//                 // Combine time to run each thread, and time to calculate sum.
+//                 let mut tme_cmb = Tme(0);
+//                 tme_cmb.start();
+//                 let mut sum_val: u32 = 0;
+//                 let mut sum_thd_tme: u64 = 0;
+//                 for hndl in hndls {
+//                     let thd_ret = hndl.join().unwrap();
+//                     sum_val += thd_ret.0;
+//                     sum_thd_tme += thd_ret.1.0;
+//                 }
+//                 tme_cmb.stop();
+//                 tme.borrow_mut().0 += tme_cmb.0 + sum_thd_tme;
+
+//                 sum_val
+//             })?;
+//         });
+//     }
+
+//     // sec: end
+//     stm.extend(quote! {
+//         {
+//             #stm_inr
+//         }
+//     });
+
+//     stm
+// }
+
+pub fn emit_bens_acm_pll_2_var_2_join() -> TokenStream {
     let mut stm = TokenStream::new();
 
     // sec: inner
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(1)]);
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
             #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
-                let mut rng = thread_rng();
-                vals.shuffle(&mut rng);
-                let mut ret = [0u32; 1];
-                let mut n: usize = 0;
+                let mut rnd_rng = thread_rng();
+                vals.shuffle(&mut rnd_rng);
+                let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+                // Sum the list of values in parallel.
+                // Use a separate accumulator in each thread.
+                let thd_cnt: usize = 2;
+                let mut hndls: Vec<JoinHandle<u32>> = Vec::with_capacity(thd_cnt);
                 tme.borrow_mut().start();
-                while n < #lit_len {
-                    ret[0] += vals[n];
-                    n += 1;
+                for rng in rngs(thd_cnt, vals.len()) {
+                    let vals_clone = vals.clone();
+                    let hndl = thread::spawn(move || {
+                        let mut acm: u32 = 0;
+                        let vals_read: &Vec<u32> = vals_clone.borrow();
+                        for idx in rng {
+                            acm += vals_read[idx];
+                        }
+                        acm
+                    });
+                    hndls.push(hndl);
+                }
+
+                // Combine the separate accumulators into a single value.
+                let mut sum: u32 = 0;
+                for hndl in hndls {
+                    sum += hndl.join().unwrap();
                 }
                 tme.borrow_mut().stop();
-                ret[0]
+                sum
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_acm_pll_2_var_2_mpsc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]);
+    });
+    for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                // Create a list of random u32s.
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rnd_rng = thread_rng();
+                vals.shuffle(&mut rnd_rng);
+                let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+                // Sum the list of values in parallel.
+                // Use a separate accumulator in each thread.
+                let thd_cnt: usize = 2;
+                let pool = ThreadPool::new(thd_cnt);
+                let (tx, rx) = channel();
+                tme.borrow_mut().start();
+                for rng in rngs(thd_cnt, vals.len()) {
+                    let vals = vals.clone();
+                    let tx = tx.clone();
+                    pool.execute(move || {
+                        let mut acm: u32 = 0;
+                        let vals: &Vec<u32> = vals.borrow();
+                        for idx in rng {
+                            acm += vals[idx];
+                        }
+                        tx.send(acm).unwrap();
+                    });
+                }
+
+                // Combine the separate accumulators into a single value.
+                let sum = rx.iter().take(thd_cnt).sum::<u32>();
+                tme.borrow_mut().stop();
+                sum
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_acm_pll_4_var_4_mpsc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]);
+    });
+    for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                // Create a list of random u32s.
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rnd_rng = thread_rng();
+                vals.shuffle(&mut rnd_rng);
+                let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+                // Sum the list of values in parallel.
+                // Use a separate accumulator in each thread.
+                let thd_cnt: usize = 4;
+                let pool = ThreadPool::new(thd_cnt);
+                let (tx, rx) = channel();
+                tme.borrow_mut().start();
+                for rng in rngs(thd_cnt, vals.len()) {
+                    let vals = vals.clone();
+                    let tx = tx.clone();
+                    pool.execute(move || {
+                        let mut acm: u32 = 0;
+                        let vals: &Vec<u32> = vals.borrow();
+                        for idx in rng {
+                            acm += vals[idx];
+                        }
+                        tx.send(acm).unwrap();
+                    });
+                }
+
+                // Combine the separate accumulators into a single value.
+                let sum = rx.iter().take(thd_cnt).sum::<u32>();
+                tme.borrow_mut().stop();
+                sum
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_acm_pll_8_var_8_mpsc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]);
+    });
+    for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                // Create a list of random u32s.
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rnd_rng = thread_rng();
+                vals.shuffle(&mut rnd_rng);
+                let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+                // Sum the list of values in parallel.
+                // Use a separate accumulator in each thread.
+                let thd_cnt: usize = 8;
+                let pool = ThreadPool::new(thd_cnt);
+                let (tx, rx) = channel();
+                tme.borrow_mut().start();
+                for rng in rngs(thd_cnt, vals.len()) {
+                    let vals = vals.clone();
+                    let tx = tx.clone();
+                    pool.execute(move || {
+                        let mut acm: u32 = 0;
+                        let vals: &Vec<u32> = vals.borrow();
+                        for idx in rng {
+                            acm += vals[idx];
+                        }
+                        tx.send(acm).unwrap();
+                    });
+                }
+
+                // Combine the separate accumulators into a single value.
+                let sum = rx.iter().take(thd_cnt).sum::<u32>();
+                tme.borrow_mut().stop();
+                sum
+            })?;
+        });
+    }
+
+    // sec: end
+    stm.extend(quote! {
+        {
+            #stm_inr
+        }
+    });
+
+    stm
+}
+
+pub fn emit_bens_acm_pll_16_var_16_mpsc() -> TokenStream {
+    let mut stm = TokenStream::new();
+
+    // sec: inner
+    let mut stm_inr = TokenStream::new();
+    let idn_sec = Ident::new("sec", Span::call_site());
+    stm_inr.extend(quote! {
+        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]);
+    });
+    for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
+        let lit_len = Literal::u32_unsuffixed(len);
+        stm_inr.extend(quote! {
+            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+                // Create a list of random u32s.
+                let mut vals: Vec<u32> = (0u32..#lit_len).collect();
+                let mut rnd_rng = thread_rng();
+                vals.shuffle(&mut rnd_rng);
+                let vals: Arc<Vec<u32>> = Arc::new(vals);
+
+                // Sum the list of values in parallel.
+                // Use a separate accumulator in each thread.
+                let thd_cnt: usize = 16;
+                let pool = ThreadPool::new(thd_cnt);
+                let (tx, rx) = channel();
+                tme.borrow_mut().start();
+                for rng in rngs(thd_cnt, vals.len()) {
+                    let vals = vals.clone();
+                    let tx = tx.clone();
+                    pool.execute(move || {
+                        let mut acm: u32 = 0;
+                        let vals: &Vec<u32> = vals.borrow();
+                        for idx in rng {
+                            acm += vals[idx];
+                        }
+                        tx.send(acm).unwrap();
+                    });
+                }
+
+                // Combine the separate accumulators into a single value.
+                let sum = rx.iter().take(thd_cnt).sum::<u32>();
+                tme.borrow_mut().stop();
+                sum
             })?;
         });
     }
