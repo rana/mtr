@@ -1,6 +1,6 @@
 //! Benchmarking for functions.
 //!
-//! * Measure function times in CPU cycles.
+//! * Measure function performance in CPU cycles.
 //! * Query benchmarks with user-defined labels.
 //! * Aggregate and compare function statistics.
 //! * Display data in command-line tables.
