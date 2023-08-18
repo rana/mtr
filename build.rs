@@ -45,13 +45,11 @@ pub fn emit_main_imports() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
-        mod ben;
         mod bens;
-        mod itr;
         use anyhow::{bail, Result};
         use bens::*;
         use clap::{arg, Parser};
-        use crate::ben::*;
+        use once_cell::sync::OnceCell;
     });
 
     stm
@@ -62,6 +60,10 @@ pub fn emit_main_fn() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
+
+        /// Returns true when printing debugging information.
+        pub static DBG: OnceCell<bool> = OnceCell::new();
+        
         pub fn main() -> Result<()> {
             let cli = Cli::parse();
             if let Err(e) = DBG.set(cli.dbg) {
@@ -70,6 +72,7 @@ pub fn emit_main_fn() -> TokenStream {
             run_mtr_qrys()?;
             Ok(())
         }
+
     });
 
     stm
@@ -102,16 +105,16 @@ pub fn emit_bens_imports() -> TokenStream {
         #![allow(clippy::slow_vector_initialization)]
         #![allow(dead_code)]
         use anyhow::{bail, Result};
-        use crate::ben::*;
-        use crate::itr::*;
+        use ben::*;
+        use itr::*;
         use rand::seq::SliceRandom;
         use rand::thread_rng;
         use std::borrow::Borrow;
         use std::fmt;
         use std::hash::Hash;
         use std::sync::Arc;
-        use std::thread::{self, JoinHandle};
         use std::sync::mpsc::channel;
+        use std::thread::{self, JoinHandle};
         use threadpool::ThreadPool;
     });
 
