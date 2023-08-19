@@ -60,8 +60,7 @@ pub fn emit_main_fn() -> TokenStream {
     stm.extend(quote! {
         
         pub fn main() -> Result<()> {
-            run_mtr_qrys()?;
-            Ok(())
+            run_qrys()
         }
 
     });
@@ -104,8 +103,8 @@ pub fn emit_bens_fle() -> TokenStream {
         emit_bens_lbl_impl_display,
         emit_bens_lbl_impl_enumstructval,
         emit_bens_lbl_impl_label,
-        emit_bens_run_mtr_qrys,
-        emit_bens_new_mtr_set,
+        emit_bens_run_qrys,
+        emit_bens_new_set,
     ];
     let ret = tok_fns.iter().fold(TokenStream::new(), |mut stm, tok_fn| {
         stm.extend(tok_fn());
@@ -285,13 +284,13 @@ pub fn emit_bens_lbl_impl_label() -> TokenStream {
     stm
 }
 
-pub fn emit_bens_run_mtr_qrys() -> TokenStream {
+pub fn emit_bens_run_qrys() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
         /// Run analysis on benchmark functions.
-        pub fn run_mtr_qrys() -> Result<()> {
-            let set = new_mtr_set()?;
+        pub fn run_qrys() -> Result<()> {
+            let set = new_set()?;
             let itr: u32 = 64;
             // Allocation: array vs vector macro
             set.qry(Qry{
@@ -559,7 +558,7 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
     stm
 }
 
-pub fn emit_bens_new_mtr_set() -> TokenStream {
+pub fn emit_bens_new_set() -> TokenStream {
     let mut stm = TokenStream::new();
 
     let idn_lbl = Ident::new(LBL_NAM, Span::call_site());
@@ -567,7 +566,7 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
     // fn: start
     stm.extend(quote! {
         /// Returns a populated set of benchmark functions.
-        pub fn new_mtr_set() -> Result<Set<#idn_lbl>>
+        pub fn new_set() -> Result<Set<#idn_lbl>>
     });
 
     // fn: inner
