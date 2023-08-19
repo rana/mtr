@@ -33,7 +33,7 @@ pub fn write_one_fle(fle_stm: TokenStream, fle_pth: &PathBuf) -> std::io::Result
 
 /// Emits a token stream for the main file.
 pub fn emit_main_fle() -> TokenStream {
-    let tok_fns = [emit_main_imports, emit_main_fn, emit_main_cli_types];
+    let tok_fns = [emit_main_imports, emit_main_fn];
     tok_fns.iter().fold(TokenStream::new(), |mut stm, tok_fn| {
         stm.extend(tok_fn());
         stm
@@ -46,10 +46,8 @@ pub fn emit_main_imports() -> TokenStream {
 
     stm.extend(quote! {
         mod bens;
-        use anyhow::{bail, Result};
+        use anyhow::Result;
         use bens::*;
-        use clap::{arg, Parser};
-        use once_cell::sync::OnceCell;
     });
 
     stm
@@ -60,37 +58,12 @@ pub fn emit_main_fn() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
-
-        /// Returns true when printing debugging information.
-        pub static DBG: OnceCell<bool> = OnceCell::new();
         
         pub fn main() -> Result<()> {
-            let cli = Cli::parse();
-            if let Err(e) = DBG.set(cli.dbg) {
-                bail!(e);
-            }
             run_mtr_qrys()?;
             Ok(())
         }
 
-    });
-
-    stm
-}
-
-/// Emits a token stream for the `cli` type.
-pub fn emit_main_cli_types() -> TokenStream {
-    let mut stm = TokenStream::new();
-
-    stm.extend(quote! {
-        /// Benchmark, query, and analyze functions
-        #[derive(Parser, Debug)]
-        pub struct Cli
-        {
-            /// Print debug information
-            #[arg(short = 'd', long)]
-            dbg: bool,
-        }
     });
 
     stm
@@ -104,8 +77,10 @@ pub fn emit_bens_imports() -> TokenStream {
         #![allow(clippy::needless_range_loop)]
         #![allow(clippy::slow_vector_initialization)]
         #![allow(dead_code)]
+        #![allow(unused_imports)]
         use anyhow::{bail, Result};
         use ben::*;
+        use ben::Sta::*;
         use itr::*;
         use rand::seq::SliceRandom;
         use rand::thread_rng;
@@ -116,6 +91,7 @@ pub fn emit_bens_imports() -> TokenStream {
         use std::sync::mpsc::channel;
         use std::thread::{self, JoinHandle};
         use threadpool::ThreadPool;
+        use Lbl::*;
     });
 
     stm
@@ -153,7 +129,7 @@ pub fn lbl_strs_plain() -> Vec<&'static str> {
     vec![
         "acm", "add", "alc", "arr", "chk", "cnt", "cst", "idx", "into_itr", "itr", "join", "lop", "mat",
         "mcr", "mpsc", "none", "one", "ptr", "raw", "rnd", "rd", "rsz", "seq", "slc", "u8", "unchk", "usize",
-        "val",  "vec",
+        "val",  "vct",
     ]
 }
 /// Returns label strings which map to struct u32 cases of an enum.
@@ -313,268 +289,268 @@ pub fn emit_bens_run_mtr_qrys() -> TokenStream {
     let mut stm = TokenStream::new();
 
     stm.extend(quote! {
-        /// Run mtr queries.
+        /// Run analysis on benchmark functions.
         pub fn run_mtr_qrys() -> Result<()> {
             let set = new_mtr_set()?;
             let itr: u32 = 64;
-            // // Allocation: array vs vector macro
-            // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Alc, Lbl::Arr], vec![Lbl::Alc, Lbl::Vec, Lbl::Mcr]],
-            //     grp: Some(vec![vec![Lbl::Alc, Lbl::Arr], vec![Lbl::Alc, Lbl::Vec, Lbl::Mcr]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
-            //     cmp: true,
-            //     itr,
-            // })?;
+            // Allocation: array vs vector macro
+            set.qry(Qry{
+                frm: vec![vec![Alc, Arr], vec![Alc, Vct, Mcr]],
+                grp: Some(vec![vec![Alc, Arr], vec![Alc, Vct, Mcr]]),
+                srt: Some(Len(0)),
+                sta: Some(Mdn),
+                trn: Some(Len(0)),
+                cmp: true,
+                itr,
+            })?;
             // // Allocation: array vs vector capacity and resize
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Alc, Lbl::Arr], vec![Lbl::Alc, Lbl::Vec, Lbl::Rsz]],
-            //     grp: Some(vec![vec![Lbl::Alc, Lbl::Arr], vec![Lbl::Alc, Lbl::Vec, Lbl::Rsz]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Alc, Arr], vec![Alc, Vct, Rsz]],
+            //     grp: Some(vec![vec![Alc, Arr], vec![Alc, Vct, Rsz]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Allocation: vector macro vs vector capacity and resize
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Alc, Lbl::Vec, Lbl::Mcr], vec![Lbl::Alc, Lbl::Vec, Lbl::Rsz]],
-            //     grp: Some(vec![vec![Lbl::Alc, Lbl::Vec, Lbl::Mcr], vec![Lbl::Alc, Lbl::Vec, Lbl::Rsz]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Alc, Vct, Mcr], vec![Alc, Vct, Rsz]],
+            //     grp: Some(vec![vec![Alc, Vct, Mcr], vec![Alc, Vct, Rsz]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Lookup: Sequential: array vs match
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Rd, Lbl::Seq, Lbl::Arr], vec![Lbl::Rd, Lbl::Seq, Lbl::Mat]],
-            //     grp: Some(vec![vec![Lbl::Rd, Lbl::Seq, Lbl::Arr], vec![Lbl::Rd, Lbl::Seq, Lbl::Mat]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Rd, Seq, Arr], vec![Rd, Seq, Mat]],
+            //     grp: Some(vec![vec![Rd, Seq, Arr], vec![Rd, Seq, Mat]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Lookup: Random: array vs match
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Rd, Lbl::Rnd, Lbl::Arr], vec![Lbl::Rd, Lbl::Rnd, Lbl::Mat]],
-            //     grp: Some(vec![vec![Lbl::Rd, Lbl::Rnd, Lbl::Arr], vec![Lbl::Rd, Lbl::Rnd, Lbl::Mat]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Rd, Rnd, Arr], vec![Rd, Rnd, Mat]],
+            //     grp: Some(vec![vec![Rd, Rnd, Arr], vec![Rd, Rnd, Mat]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Iteration: range index (bounds checked) vs iterator
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Idx, Lbl::Chk], vec![Lbl::Lop, Lbl::Itr, Lbl::Vec]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Idx, Lbl::Chk], vec![Lbl::Lop, Lbl::Itr, Lbl::Vec]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Idx, Chk], vec![Lop, Itr, Vct]],
+            //     grp: Some(vec![vec![Lop, Idx, Chk], vec![Lop, Itr, Vct]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Iteration: range index bounds checked vs range index unchecked
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Idx, Lbl::Chk], vec![Lbl::Lop, Lbl::Idx, Lbl::Unchk]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Idx, Lbl::Chk], vec![Lbl::Lop, Lbl::Idx, Lbl::Unchk]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Idx, Chk], vec![Lop, Idx, Unchk]],
+            //     grp: Some(vec![vec![Lop, Idx, Chk], vec![Lop, Idx, Unchk]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Iteration: Vector: iterator vs into iterator
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Vec, Lbl::Itr], vec![Lbl::Lop, Lbl::Vec, Lbl::IntoItr]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Vec, Lbl::Itr], vec![Lbl::Lop, Lbl::Vec, Lbl::IntoItr]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Vct, Itr], vec![Lop, Vct, IntoItr]],
+            //     grp: Some(vec![vec![Lop, Vct, Itr], vec![Lop, Vct, IntoItr]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Iteration: Slice: iterator vs into iterator
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Slc, Lbl::Itr], vec![Lbl::Lop, Lbl::Slc, Lbl::IntoItr]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Slc, Lbl::Itr], vec![Lbl::Lop, Lbl::Slc, Lbl::IntoItr]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Slc, Itr], vec![Lop, Slc, IntoItr]],
+            //     grp: Some(vec![vec![Lop, Slc, Itr], vec![Lop, Slc, IntoItr]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Cast: u8 vs usize
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Cst, Lbl::U8], vec![Lbl::Cst, Lbl::Usize]],
-            //     grp: Some(vec![vec![Lbl::Cst, Lbl::U8], vec![Lbl::Cst, Lbl::Usize]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Cst, U8], vec![Cst, Usize]],
+            //     grp: Some(vec![vec![Cst, U8], vec![Cst, Usize]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: read pointer vs read de-referenced value
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Acm, Lbl::Rd, Lbl::Ptr], vec![Lbl::Acm, Lbl::Rd, Lbl::Val]],
-            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Rd, Lbl::Ptr], vec![Lbl::Acm, Lbl::Rd, Lbl::Val]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Acm, Rd, Ptr], vec![Acm, Rd, Val]],
+            //     grp: Some(vec![vec![Acm, Rd, Ptr], vec![Acm, Rd, Val]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: total count vs multiple add one
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Acm, Lbl::Add, Lbl::Cnt], vec![Lbl::Acm, Lbl::Add, Lbl::One]],
-            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Add, Lbl::Cnt], vec![Lbl::Acm, Lbl::Add, Lbl::One]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Acm, Add, Cnt], vec![Acm, Add, One]],
+            //     grp: Some(vec![vec![Acm, Add, Cnt], vec![Acm, Add, One]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: Unroll: Single accumulator: no unrolling vs unroll 8
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(1)]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(1)]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(8), Var(1)]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(8), Var(1)]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: Unroll 8: 1 accumulator vs 8 accumulators
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(1)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(1)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(8), Var(1)], vec![Lop, Acm, Unr(8), Var(8)]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(8), Var(1)], vec![Lop, Acm, Unr(8), Var(8)]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: Unroll: unroll 8, 8 accumulators vs unroll 16, 16 accumulators
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(8), Var(8)], vec![Lop, Acm, Unr(16), Var(16)]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(8), Var(8)], vec![Lop, Acm, Unr(16), Var(16)]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: Unroll: no unrolling vs unroll 8 with 8 accumulators
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(8), Var(8)]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(8), Var(8)]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             // // Accumulate: Unroll: no unrolling vs unroll 16 with 16 accumulators
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(16), Var(16)]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Lop, Acm, Unr(16), Var(16)]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: single thread, single accumulator vs 2 threads, 2 accumulators, join
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(2), Var(2), Join]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(2), Var(2), Join]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: single thread, single accumulator  vs 2 threads, 2 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(2), Var(2), Mpsc]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(2), Var(2), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: single thread, 2 accumulators vs 2 threads, 2 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(2), Var(2)], vec![Acm, Pll(2), Var(2), Mpsc]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(2), Var(2)], vec![Acm, Pll(2), Var(2), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: 2 threads, 2 accumulators, join vs 2 threads, 2 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join], vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Acm, Pll(2), Var(2), Join], vec![Acm, Pll(2), Var(2), Mpsc]],
+            //     grp: Some(vec![vec![Acm, Pll(2), Var(2), Join], vec![Acm, Pll(2), Var(2), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: 2 threads, 2 accumulators, mspc vs 4 threads, 4 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Acm, Pll(2), Var(2), Mpsc], vec![Acm, Pll(4), Var(4), Mpsc]],
+            //     grp: Some(vec![vec![Acm, Pll(2), Var(2), Mpsc], vec![Acm, Pll(4), Var(4), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
             // // Accumulate: Parallel: 1 thread, 1 accumulator vs 4 threads, 4 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Lop, Lbl::Acm, Lbl::Unr(0)], vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(4), Var(4), Mpsc]],
+            //     grp: Some(vec![vec![Lop, Acm, Unr(0)], vec![Acm, Pll(4), Var(4), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
             
             // // Accumulate: Parallel: 4 threads, 4 accumulators, mspc vs 8 threads, 8 accumulators, mpsc
             // set.qry(Qry{
-            //     frm: vec![vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]],
-            //     grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]]),
-            //     srt: Some(Lbl::Len(0)),
-            //     sta: Some(Sta::Mdn),
-            //     trn: Some(Lbl::Len(0)),
+            //     frm: vec![vec![Acm, Pll(4), Var(4), Mpsc], vec![Acm, Pll(8), Var(8), Mpsc]],
+            //     grp: Some(vec![vec![Acm, Pll(4), Var(4), Mpsc], vec![Acm, Pll(8), Var(8), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
             //     cmp: true,
             //     itr,
             // })?;
 
-            // Accumulate: Parallel: 8 threads, 8 accumulators, mspc vs 16 threads, 16 accumulators, mpsc
-            set.qry(Qry{
-                frm: vec![vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]],
-                grp: Some(vec![vec![Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc], vec![Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]]),
-                srt: Some(Lbl::Len(0)),
-                sta: Some(Sta::Mdn),
-                trn: Some(Lbl::Len(0)),
-                cmp: true,
-                itr,
-            })?;
+            // // Accumulate: Parallel: 8 threads, 8 accumulators, mspc vs 16 threads, 16 accumulators, mpsc
+            // set.qry(Qry{
+            //     frm: vec![vec![Acm, Pll(8), Var(8), Mpsc], vec![Acm, Pll(16), Var(16), Mpsc]],
+            //     grp: Some(vec![vec![Acm, Pll(8), Var(8), Mpsc], vec![Acm, Pll(16), Var(16), Mpsc]]),
+            //     srt: Some(Len(0)),
+            //     sta: Some(Mdn),
+            //     trn: Some(Len(0)),
+            //     cmp: true,
+            //     itr,
+            // })?;
 
             Ok(())
         }
@@ -590,7 +566,7 @@ pub fn emit_bens_new_mtr_set() -> TokenStream {
 
     // fn: start
     stm.extend(quote! {
-        /// Returns a populated set of `mtr` benchmark functions.
+        /// Returns a populated set of benchmark functions.
         pub fn new_mtr_set() -> Result<Set<#idn_lbl>>
     });
 
@@ -652,12 +628,12 @@ pub fn emit_bens_alc_arr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Alc, Lbl::Arr]);
+        let #idn_sec = ret.sec(&[Alc, Arr]);
     });
     for len in ALC_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || [0u32; #lit_len])?;
+            #idn_sec.ins(&[Len(#lit_len)], || [0u32; #lit_len])?;
         });
     }
 
@@ -678,12 +654,12 @@ pub fn emit_bens_alc_vec_rsz() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Alc, Lbl::Vec, Lbl::Rsz]);
+        let #idn_sec = ret.sec(&[Alc, Vct, Rsz]);
     });
     for len in ALC_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+            #idn_sec.ins(&[Len(#lit_len)], || {
                 let mut ret = Vec::<u32>::with_capacity(#lit_len);
                 ret.resize(#lit_len, 0);
                 ret
@@ -708,12 +684,12 @@ pub fn emit_bens_alc_vec_mcr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Alc, Lbl::Vec, Lbl::Mcr]);
+        let #idn_sec = ret.sec(&[Alc, Vct, Mcr]);
     });
     for len in ALC_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || vec![0u32; #lit_len])?;
+            #idn_sec.ins(&[Len(#lit_len)], || vec![0u32; #lit_len])?;
         });
     }
 
@@ -736,7 +712,7 @@ pub fn emit_bens_rd_arr_seq() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Arr, Lbl::Seq]);
+        let #idn_sec = ret.sec(&[Rd, Arr, Seq]);
     });
     let mut rng = rand::thread_rng();
     for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
@@ -750,7 +726,7 @@ pub fn emit_bens_rd_arr_seq() -> TokenStream {
         // Read each element from an array in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+            #idn_sec.ins(&[Len(#lit_len)], || {
                 let arr = [#stm_arr];
                 let mut ret = [0u32; 1];
                 for idx in 0..#lit_len {
@@ -778,7 +754,7 @@ pub fn emit_bens_rd_mat_seq() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Mat, Lbl::Seq]);
+        let #idn_sec = ret.sec(&[Rd, Mat, Seq]);
     });
     let mut rng = rand::thread_rng();
     for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
@@ -795,7 +771,7 @@ pub fn emit_bens_rd_mat_seq() -> TokenStream {
         // Read each element from a match in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins(&[Lbl::Len(#lit_len)], || {
+            #idn_sec.ins(&[Len(#lit_len)], || {
                 let mut ret = [0u32; 1];
                 for idx in 0..#lit_len {
                     ret[0] = match idx {
@@ -825,7 +801,7 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Arr, Lbl::Rnd]);
+        let #idn_sec = ret.sec(&[Rd, Arr, Rnd]);
 
     });
     let mut rng = rand::thread_rng();
@@ -840,7 +816,7 @@ pub fn emit_bens_rd_arr_rnd() -> TokenStream {
         // Read each element from an array in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let arr = [#stm_arr];
                 let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
@@ -873,7 +849,7 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Rd, Lbl::Mat, Lbl::Rnd]);
+        let #idn_sec = ret.sec(&[Rd, Mat, Rnd]);
     });
     let mut rng = rand::thread_rng();
     for len in RD_RNG.clone().map(|x| 2u32.pow(x)) {
@@ -890,7 +866,7 @@ pub fn emit_bens_rd_mat_rnd() -> TokenStream {
         // Read each element from a match in sequence.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut idxs: Vec<usize> = (0..#lit_len).collect();
                 let mut rng = thread_rng();
                 idxs.shuffle(&mut rng);
@@ -927,13 +903,13 @@ pub fn emit_bens_lop_idx_chk() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Idx, Lbl::Chk]);
+        let #idn_sec = ret.sec(&[Lop, Idx, Chk]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         // Iterate a for loop with range syntax 0..len.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -965,13 +941,13 @@ pub fn emit_bens_lop_idx_unchk() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Idx, Lbl::Unchk]);
+        let #idn_sec = ret.sec(&[Lop, Idx, Unchk]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         // Iterate a for loop with range syntax 0..len.
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1005,12 +981,12 @@ pub fn emit_bens_lop_vec_itr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr, Lbl::Vec]);
+        let #idn_sec = ret.sec(&[Lop, Itr, Vct]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1042,12 +1018,12 @@ pub fn emit_bens_lop_vec_into_itr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::IntoItr, Lbl::Vec]);
+        let #idn_sec = ret.sec(&[Lop, IntoItr, Vct]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1079,12 +1055,12 @@ pub fn emit_bens_lop_slc_itr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Itr, Lbl::Slc]);
+        let #idn_sec = ret.sec(&[Lop, Itr, Slc]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1116,12 +1092,12 @@ pub fn emit_bens_lop_slc_into_itr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::IntoItr, Lbl::Slc]);
+        let #idn_sec = ret.sec(&[Lop, IntoItr, Slc]);
     });
     for len in LOP_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1156,12 +1132,12 @@ pub fn emit_bens_cst_u8() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Cst, Lbl::U8]);
+        let #idn_sec = ret.sec(&[Cst, U8]);
     });
     for len in CST_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1193,12 +1169,12 @@ pub fn emit_bens_cst_usize() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Cst, Lbl::Usize]);
+        let #idn_sec = ret.sec(&[Cst, Usize]);
     });
     for len in CST_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1232,12 +1208,12 @@ pub fn emit_bens_acm_rd_ptr() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Rd, Lbl::Ptr]);
+        let #idn_sec = ret.sec(&[Acm, Rd, Ptr]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1269,12 +1245,12 @@ pub fn emit_bens_acm_rd_val() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Rd, Lbl::Val]);
+        let #idn_sec = ret.sec(&[Acm, Rd, Val]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1307,12 +1283,12 @@ pub fn emit_bens_acm_add_cnt() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Add, Lbl::Cnt]);
+        let #idn_sec = ret.sec(&[Acm, Add, Cnt]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1346,12 +1322,12 @@ pub fn emit_bens_acm_add_one() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Add, Lbl::One]);
+        let #idn_sec = ret.sec(&[Acm, Add, One]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1384,12 +1360,12 @@ pub fn emit_bens_acm_unr_0() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(0)]);
+        let #idn_sec = ret.sec(&[Lop, Acm, Unr(0)]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1423,12 +1399,12 @@ pub fn emit_bens_acm_unr_2_var_2() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(2), Lbl::Var(2)]);
+        let #idn_sec = ret.sec(&[Lop, Acm, Unr(2), Var(2)]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1463,12 +1439,12 @@ pub fn emit_bens_acm_unr_8_var_1() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(1)]);
+        let #idn_sec = ret.sec(&[Lop, Acm, Unr(8), Var(1)]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1509,12 +1485,12 @@ pub fn emit_bens_acm_unr_8_var_8() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(8), Lbl::Var(8)]);
+        let #idn_sec = ret.sec(&[Lop, Acm, Unr(8), Var(8)]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1556,12 +1532,12 @@ pub fn emit_bens_acm_unr_16_var_16() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Lop, Lbl::Acm, Lbl::Unr(16), Lbl::Var(16)]);
+        let #idn_sec = ret.sec(&[Lop, Acm, Unr(16), Var(16)]);
     });
     for len in ACM_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rng = thread_rng();
                 vals.shuffle(&mut rng);
@@ -1614,12 +1590,12 @@ pub static PLL_RNG: Range<u32> = 4..18;
 //     let mut stm_inr = TokenStream::new();
 //     let idn_sec = Ident::new("sec", Span::call_site());
 //     stm_inr.extend(quote! {
-//         let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(22), Lbl::Var(2), Lbl::Join]);
+//         let #idn_sec = ret.sec(&[Acm, Pll(22), Var(2), Join]);
 //     });
 //     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
 //         let lit_len = Literal::u32_unsuffixed(len);
 //         stm_inr.extend(quote! {
-//             #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+//             #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
 //                 // Create a list of random u32s.
 //                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
 //                 let mut rnd_rng = thread_rng();
@@ -1682,12 +1658,12 @@ pub fn emit_bens_acm_pll_2_var_2_join() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Join]);
+        let #idn_sec = ret.sec(&[Acm, Pll(2), Var(2), Join]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rnd_rng = thread_rng();
@@ -1740,12 +1716,12 @@ pub fn emit_bens_acm_pll_2_var_2_mpsc() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(2), Lbl::Var(2), Lbl::Mpsc]);
+        let #idn_sec = ret.sec(&[Acm, Pll(2), Var(2), Mpsc]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rnd_rng = thread_rng();
@@ -1796,12 +1772,12 @@ pub fn emit_bens_acm_pll_4_var_4_mpsc() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(4), Lbl::Var(4), Lbl::Mpsc]);
+        let #idn_sec = ret.sec(&[Acm, Pll(4), Var(4), Mpsc]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rnd_rng = thread_rng();
@@ -1852,12 +1828,12 @@ pub fn emit_bens_acm_pll_8_var_8_mpsc() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(8), Lbl::Var(8), Lbl::Mpsc]);
+        let #idn_sec = ret.sec(&[Acm, Pll(8), Var(8), Mpsc]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rnd_rng = thread_rng();
@@ -1908,12 +1884,12 @@ pub fn emit_bens_acm_pll_16_var_16_mpsc() -> TokenStream {
     let mut stm_inr = TokenStream::new();
     let idn_sec = Ident::new("sec", Span::call_site());
     stm_inr.extend(quote! {
-        let #idn_sec = ret.sec(&[Lbl::Acm, Lbl::Pll(16), Lbl::Var(16), Lbl::Mpsc]);
+        let #idn_sec = ret.sec(&[Acm, Pll(16), Var(16), Mpsc]);
     });
     for len in PLL_RNG.clone().map(|x| 2u32.pow(x)) {
         let lit_len = Literal::u32_unsuffixed(len);
         stm_inr.extend(quote! {
-            #idn_sec.ins_prm(&[Lbl::Len(#lit_len)], |tme| {
+            #idn_sec.ins_prm(&[Len(#lit_len)], |tme| {
                 // Create a list of random u32s.
                 let mut vals: Vec<u32> = (0u32..#lit_len).collect();
                 let mut rnd_rng = thread_rng();
