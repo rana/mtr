@@ -40,7 +40,7 @@ Measurements in CPU cycles.
 ## Usage
 
 ```sh
-clear && cargo run -q --profile release
+clear && cargo r -q --profile release
 ```
 
 * Run with optimizations on. Either:
