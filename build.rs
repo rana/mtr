@@ -395,9 +395,9 @@ pub fn emit_new_stdy() -> TokenStream {
     // fn: end
     stm.extend(quote! {
         {
-            let mut ret = Stdy::new();
+            let mut stdy = Stdy::new();
             #stm_inr
-            Ok(ret)
+            Ok(stdy)
         }
     });
 
@@ -420,7 +420,7 @@ pub fn emit_alc_arr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Alc, Arr], |x| {
+        stdy.reg_bld(&[Alc, Arr], |x| {
             #stm_inr
         });
     });
@@ -442,7 +442,7 @@ pub fn emit_alc_vct_mcr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Alc, Vct, Mcr], |x| {
+        stdy.reg_bld(&[Alc, Vct, Mcr], |x| {
             #stm_inr
         });
     });
@@ -468,7 +468,7 @@ pub fn emit_alc_vct_rsz() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Alc, Vct, Rsz], |x| {
+        stdy.reg_bld(&[Alc, Vct, Rsz], |x| {
             #stm_inr
         });
     });
@@ -508,7 +508,7 @@ pub fn emit_rd_seq_arr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Rd, Seq, Arr], |x| {
+        stdy.reg_bld(&[Rd, Seq, Arr], |x| {
             #stm_inr
         });
     });
@@ -551,7 +551,7 @@ pub fn emit_rd_seq_mat() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Rd, Seq, Mat], |x| {
+        stdy.reg_bld(&[Rd, Seq, Mat], |x| {
             #stm_inr
         });
     });
@@ -595,7 +595,7 @@ pub fn emit_rd_rnd_arr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Rd, Rnd, Arr], |x| {
+        stdy.reg_bld(&[Rd, Rnd, Arr], |x| {
             #stm_inr
         });
     });
@@ -643,7 +643,7 @@ pub fn emit_rd_rnd_mat() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Rd, Rnd, Mat], |x| {
+        stdy.reg_bld(&[Rd, Rnd, Mat], |x| {
             #stm_inr
         });
     });
@@ -680,7 +680,7 @@ pub fn emit_lop_idx_chk() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, Idx, Chk], |x| {
+        stdy.reg_bld(&[Lop, Idx, Chk], |x| {
             #stm_inr
         });
     });
@@ -716,7 +716,7 @@ pub fn emit_lop_idx_unchk() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, Idx, Unchk], |x| {
+        stdy.reg_bld(&[Lop, Idx, Unchk], |x| {
             #stm_inr
         });
     });
@@ -750,7 +750,7 @@ pub fn emit_lop_vec_itr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, Itr, Vct], |x| {
+        stdy.reg_bld(&[Lop, Itr, Vct], |x| {
             #stm_inr
         });
     });
@@ -784,7 +784,7 @@ pub fn emit_lop_vec_into_itr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, IntoItr, Vct], |x| {
+        stdy.reg_bld(&[Lop, IntoItr, Vct], |x| {
             #stm_inr
         });
     });
@@ -818,7 +818,7 @@ pub fn emit_lop_slc_itr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, Slc, Itr], |x| {
+        stdy.reg_bld(&[Lop, Slc, Itr], |x| {
             #stm_inr
         });
     });
@@ -852,7 +852,7 @@ pub fn emit_lop_slc_into_itr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Lop, Slc, IntoItr], |x| {
+        stdy.reg_bld(&[Lop, Slc, IntoItr], |x| {
             #stm_inr
         });
     });
@@ -888,7 +888,7 @@ pub fn emit_cst_u8() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Cst, U8], |x| {
+        stdy.reg_bld(&[Cst, U8], |x| {
             #stm_inr
         });
     });
@@ -921,7 +921,7 @@ pub fn emit_cst_usize() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Cst, Usize], |x| {
+        stdy.reg_bld(&[Cst, Usize], |x| {
             #stm_inr
         });
     });
@@ -956,7 +956,7 @@ pub fn emit_acm_rd_ptr() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Rd, Ptr], |x| {
+        stdy.reg_bld(&[Acm(1), Rd, Ptr], |x| {
             #stm_inr
         });
     });
@@ -990,7 +990,7 @@ pub fn emit_acm_rd_val() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Rd, Val], |x| {
+        stdy.reg_bld(&[Acm(1), Rd, Val], |x| {
             #stm_inr
         });
     });
@@ -1025,7 +1025,7 @@ pub fn emit_acm_add_cnt() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Add, Cnt], |x| {
+        stdy.reg_bld(&[Acm(1), Add, Cnt], |x| {
             #stm_inr
         });
     });
@@ -1059,7 +1059,7 @@ pub fn emit_acm_add_one() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Add, One], |x| {
+        stdy.reg_bld(&[Acm(1), Add, One], |x| {
             #stm_inr
         });
     });
@@ -1094,7 +1094,7 @@ pub fn emit_acm1_unr1_thd1() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(1)], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(1)], |x| {
             #stm_inr
         });
     });
@@ -1130,7 +1130,7 @@ pub fn emit_acm2_unr2_thd1() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(2), Unr(2), Thd(1)], |x| {
+        stdy.reg_bld(&[Acm(2), Unr(2), Thd(1)], |x| {
             #stm_inr
         });
     });
@@ -1172,7 +1172,7 @@ pub fn emit_acm1_unr8_thd1() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(8), Thd(1)], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(8), Thd(1)], |x| {
             #stm_inr
         });
     });
@@ -1215,7 +1215,7 @@ pub fn emit_acm8_unr8_thd1() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(8), Unr(8), Thd(1)], |x| {
+        stdy.reg_bld(&[Acm(8), Unr(8), Thd(1)], |x| {
             #stm_inr
         });
     });
@@ -1267,7 +1267,7 @@ pub fn emit_acm16_unr16_thd1() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(16), Unr(16), Thd(1)], |x| {
+        stdy.reg_bld(&[Acm(16), Unr(16), Thd(1)], |x| {
             #stm_inr
         });
     });
@@ -1323,7 +1323,7 @@ pub fn emit_acm1_unr1_thd2_join() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(2), Join], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(2), Join], |x| {
             #stm_inr
         });
     });
@@ -1375,7 +1375,7 @@ pub fn emit_acm1_unr1_thd2_mpsc() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(2), Mpsc], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(2), Mpsc], |x| {
             #stm_inr
         });
     });
@@ -1427,7 +1427,7 @@ pub fn emit_acm1_unr1_thd4_mpsc() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(4), Mpsc], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(4), Mpsc], |x| {
             #stm_inr
         });
     });
@@ -1479,7 +1479,7 @@ pub fn emit_acm1_unr1_thd8_mpsc() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(8), Mpsc], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(8), Mpsc], |x| {
             #stm_inr
         });
     });
@@ -1531,7 +1531,7 @@ pub fn emit_acm1_unr1_thd16_mpsc() -> TokenStream {
 
     // sec: end
     stm.extend(quote! {
-        ret.reg_bld(&[Acm(1), Unr(1), Thd(16), Mpsc], |x| {
+        stdy.reg_bld(&[Acm(1), Unr(1), Thd(16), Mpsc], |x| {
             #stm_inr
         });
     });
