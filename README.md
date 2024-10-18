@@ -1,10 +1,9 @@
 # mtr
 
-Metrics for Rust code.
-
-How much does a function cost?
-
-Measurements in CPU cycles.
+Rust library for measuring code performance in CPU cycles
+  - Provides benchmarking tools for various Rust programming patterns and techniques
+  - Includes examples comparing allocation strategies, lookup methods, iteration techniques, and parallelization approaches
+  - Focuses on micro-optimizations and understanding performance implications of different coding choices
 
 `mtr` = metrics
 
