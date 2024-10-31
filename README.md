@@ -1,4 +1,6 @@
-# mtr
+# mtr - Performance Analysis Framework for Rust
+
+This is a sophisticated benchmarking framework written in Rust that provides detailed CPU cycle-level performance analysis for various programming patterns and techniques. The project focuses on micro-optimizations and empirical performance comparisons of different implementation approaches.
 
 Rust library for measuring code performance in CPU cycles
   - Provides benchmarking tools for various Rust programming patterns and techniques
@@ -7,7 +9,73 @@ Rust library for measuring code performance in CPU cycles
 
 `mtr` = metrics
 
-- [mtr](#mtr)
+## Key Features
+
+1. **Precise Performance Measurement**
+- Uses CPU cycle counting via RDTSC (Read Time-Stamp Counter)
+- Provides high-resolution timing for micro-benchmarks
+- Implements proper black-box optimizations to prevent compiler interference
+
+2. **Comprehensive Benchmark Suites**
+- Memory allocation strategies (arrays vs vectors)
+- Data structure access patterns (sequential vs random access)
+- Iteration techniques (index-based vs iterators)
+- Type casting performance (u8 vs usize)
+- Loop unrolling optimizations
+- Multi-threading approaches (1-16 threads)
+- Thread synchronization methods (join vs mpsc channels)
+
+3. **Key Findings**
+
+Memory Operations:
+- Arrays generally outperform vector allocations for small sizes
+- Vector with pre-allocated capacity performs better than macro-based initialization
+- Sequential array access is faster than match-based lookups for small datasets
+
+Iteration & Processing:
+- Iterators often outperform index-based loops
+- Bounds checking has minimal impact on modern Rust
+- Loop unrolling effectiveness varies with data size
+- Single accumulator is often more efficient than multiple accumulators for small datasets
+
+Parallelization:
+- Single-threaded processing outperforms multi-threaded for small datasets
+- MPSC (Multiple Producer Single Consumer) channels preferred for thread communication
+- Optimal thread count depends heavily on data size and processing requirements
+- Threading overhead usually only justified for large datasets (>4096 elements)
+
+## Technical Implementation
+
+- Written in idiomatic Rust with extensive use of generics and traits
+- Leverages Rust's type system for zero-cost abstractions
+- Uses low-level CPU features for precise timing
+- Implements thread pooling and synchronization primitives
+- Custom benchmarking harness with statistical analysis
+
+## Value Proposition
+
+This framework helps developers make data-driven decisions about:
+- Algorithm implementation strategies 
+- Memory allocation patterns
+- Concurrency approaches
+- Performance optimization techniques
+
+The empirical results challenge common assumptions about performance and provide concrete guidance for writing high-performance Rust code.
+
+Skills Demonstrated:
+- Deep understanding of Rust's performance characteristics
+- Experience with systems programming and low-level optimization
+- Ability to design and implement complex benchmarking systems
+- Strong analytical skills and data-driven decision making
+- Practical experience with concurrent programming patterns
+- Knowledge of modern CPU architecture and performance considerations
+
+The project shows both theoretical knowledge and practical implementation skills that are directly applicable to performance-critical Rust development.
+
+- [mtr - Performance Analysis Framework for Rust](#mtr---performance-analysis-framework-for-rust)
+  - [Key Features](#key-features)
+  - [Technical Implementation](#technical-implementation)
+  - [Value Proposition](#value-proposition)
   - [Usage](#usage)
   - [Examples](#examples)
     - [Allocation: array vs vector macro](#allocation-array-vs-vector-macro)
@@ -35,6 +103,7 @@ Rust library for measuring code performance in CPU cycles
     - [Accumulate: Parallel: 4 threads, 4 accumulators, mspc vs 8 threads, 8 accumulators, mpsc](#accumulate-parallel-4-threads-4-accumulators-mspc-vs-8-threads-8-accumulators-mpsc)
     - [Accumulate: Parallel: 8 threads, 8 accumulators, mspc vs 16 threads, 16 accumulators, mpsc](#accumulate-parallel-8-threads-8-accumulators-mspc-vs-16-threads-16-accumulators-mpsc)
   - [Development notes](#development-notes)
+  - [File Tree](#file-tree)
 
 ## Usage
 
@@ -455,7 +524,7 @@ Prefer 16 threads. Based on array length.
 [Why my Rust benchmarks were wrong, or how to correctly use std::hint::black_box?](https://gendignoux.com/blog/2022/01/31/rust-benchmarks.html)
 
 [Counting exactly the number of distinct elements: sorted arrays vs. hash sets?](https://lemire.me/blog/2017/05/23/counting-exactly-the-number-of-distinct-elements-sorted-arrays-vs-hash-sets/)
-     
+
 [Counting CPU cycles](https://github.com/lemire/Code-used-on-Daniel-Lemire-s-blog/blob/master/2017/05/23/benchmark.h#L5) Daniel Lemire, C code: `RDTSC_START`, `RDTSC_STOP`
 
 [RDTSC — Read Time-Stamp Counter](https://www.felixcloutier.com/x86/rdtsc)
@@ -464,3 +533,17 @@ Emit assembly code from Rust:
 * `cargo rustc -- --emit asm`
 * Read assembly file `target/debug/deps/mtr-44866ab166973511.s`.
 
+## File Tree
+
+```sh
+.
+├── build.rs
+├── Cargo.lock
+├── Cargo.toml
+├── LICENSE
+├── README.md
+└── src
+    └── main.rs
+
+2 directories, 6 files
+```
